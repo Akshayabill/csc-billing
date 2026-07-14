@@ -28,21 +28,13 @@ body{
     border-radius:10px;
     box-shadow:0 0 10px rgba(0,0,0,.1);
 }
-
-.perm-box {
-    margin-top: 20px; 
-    background: #f8f9fa; 
-    padding: 20px; 
-    border-radius: 8px; 
-    border: 1px solid #dee2e6;
-}
 </style>
 
 </head>
 <body>
 
 <div class="header">
-    Edit User Details
+    Modify User Details
 </div>
 
 <div class="form-box">
@@ -60,36 +52,23 @@ body{
 </div>
 
 <div class="mb-3">
-    <label class="form-label"><b>Role</b></label>
+    <label class="form-label"><b>System Role</b></label>
     <select name="role" id="user_role" class="form-select" onchange="checkRole()">
         <option value="ADMIN" {% if user[3]=="ADMIN" %}selected{% endif %}>ADMIN</option>
         <option value="STAFF" {% if user[3]=="STAFF" %}selected{% endif %}>STAFF</option>
     </select>
 </div>
 
-<!-- Edit Staff Permission Section -->
-<div class="perm-box" id="permission_section" style="{% if user[3]=='ADMIN' %}display: none;{% endif %}">
-    <h5 style="margin-top: 0; color: #0066cc; font-weight: bold; border-bottom: 2px solid #ddd; padding-bottom: 8px;">
-        Modify Staff Permissions
-    </h5>
+<div class="mb-3" id="feature_section" style="{% if user[3]=='ADMIN' %}display: none;{% endif %}">
+    <label class="form-label"><b>Modify Permitted Dashboard Features</b></label>
+    <p class="text-muted" style="font-size: 12px; margin-top:-5px;">Ctrl കീ അമർത്തിപ്പിടിച്ച് ഒന്നിൽ കൂടുതൽ ഫീച്ചറുകൾ ഒരുമിച്ച് മാറ്റാം</p>
     
-    <label style="display: block; margin-bottom: 12px; cursor: pointer;">
-        <input type="checkbox" name="is_full_access" id="full_access" value="true" {% if user[7] %}checked{% endif %} onchange="toggleAllPerms(this)"> 
-        <span style="color: #dc3545; font-weight: bold;">Full Access</span>
-    </label>
-    <hr style="margin: 10px 0;">
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_view_reports" value="true" {% if user[4] or user[7] %}checked{% endif %} {% if user[7] %}disabled{% endif %}> View Reports
-    </label>
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_manage_services" value="true" {% if user[5] or user[7] %}checked{% endif %} {% if user[7] %}disabled{% endif %}> Manage Services
-    </label>
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_manage_expenses" value="true" {% if user[6] or user[7] %}checked{% endif %} {% if user[7] %}disabled{% endif %}> Track Expenses
-    </label>
+    <select name="features[]" class="form-select" multiple style="height: 120px;">
+        <option value="FULL_ACCESS" style="color: #dc3545; font-weight: bold;" {% if user[7] %}selected{% endif %}>[ Full Access / Manager ]</option>
+        <option value="REPORTS" {% if user[4] %}selected{% endif %}>Reports (റിപ്പോർട്ടുകൾ കാണാൻ)</option>
+        <option value="SERVICES" {% if user[5] %}selected{% endif %}>Service Management (സർവീസുകൾ മാറ്റാൻ)</option>
+        <option value="EXPENSES" {% if user[6] %}selected{% endif %}>Expense Management (ചിലവുകൾ കൂട്ടാൻ)</option>
+    </select>
 </div>
 
 <div class="mt-4">
@@ -104,30 +83,11 @@ body{
 <script>
 function checkRole() {
     let role = document.getElementById("user_role").value;
-    let permSection = document.getElementById("permission_section");
+    let featSection = document.getElementById("feature_section");
     if(role === "ADMIN") {
-        permSection.style.display = "none";
+        featSection.style.display = "none";
     } else {
-        permSection.style.display = "block";
-    }
-}
-
-function toggleAllPerms(master) {
-    let checkboxes = document.getElementsByClassName('perm-check');
-    for (let i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].checked = master.checked;
-        checkboxes[i].disabled = master.checked;
-    }
-}
-
-// Initial check on page load to block checkboxes if Full Access is active
-window.onload = function() {
-    let master = document.getElementById("full_access");
-    if(master && master.checked) {
-        let checkboxes = document.getElementsByClassName('perm-check');
-        for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].disabled = true;
-        }
+        featSection.style.display = "block";
     }
 }
 </script>
