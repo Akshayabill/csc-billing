@@ -171,7 +171,7 @@ def add_user():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        role = request.form.get("role")
+        role = request.form.get("role").upper()
         
         # Getting permission checkboxes values
         is_full = request.form.get("is_full_access") == "true"
@@ -204,7 +204,7 @@ def edit_user(id):
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        role = request.form.get("role")
+        role = request.form.get("role").upper()
         
         is_full = request.form.get("is_full_access") == "true"
         can_rep = request.form.get("can_view_reports") == "true" or is_full
