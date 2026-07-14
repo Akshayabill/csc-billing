@@ -79,6 +79,8 @@ def init_db():
     )
     """)
 
+    cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
+    
     cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
