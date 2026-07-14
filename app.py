@@ -8,10 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "csc_secret"
 
-# PUT YOUR NEW DATABASE URL HERE
 DATABASE_URL = "postgres://csc_db_2u5c_user:XtjkraSXSkDBbUUTQxA0bJVnRisJmDUg@dpg-d9b3e26cjfls73ds1qr0-a/csc_db_2u5c"
-
-# DATABASE CONNECTION POOL SETTINGS
 db_pool = SimpleConnectionPool(1, 10, DATABASE_URL)
 
 def get_db_connection():
@@ -79,26 +76,28 @@ def init_db():
     )
     """)
 
+    # ടേബിൾ ഫ്രഷ് ആയി ക്രിയേറ്റ് ചെയ്യാൻ
     cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
-    
+
     cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT DEFAULT 'staff',
-                can_view_reports BOOLEAN DEFAULT FALSE,
-                can_manage_services BOOLEAN DEFAULT FALSE,
-                can_manage_expenses BOOLEAN DEFAULT FALSE,
-                is_full_access BOOLEAN DEFAULT FALSE
-            )
-        ''')
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT DEFAULT 'STAFF',
+            can_view_reports BOOLEAN DEFAULT FALSE,
+            can_manage_services BOOLEAN DEFAULT FALSE,
+            can_manage_expenses BOOLEAN DEFAULT FALSE,
+            is_full_access BOOLEAN DEFAULT FALSE
+        )
+    ''')
 
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
         cursor.execute("""
-        INSERT INTO users (username, password, role, is_full_access) VALUES (%s,%s,%s,%s)
-        """, ("admin", "admin123", "ADMIN", True))
+        INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, ("admin", "admin123", "ADMIN", True, True, True, True))
 
     conn.commit()
     cursor.close()
@@ -106,15 +105,12 @@ def init_db():
 
 init_db()
 
-
-# Helper function to check staff specific permissions
 def has_permission(permission_name):
     if "username" not in session:
         return False
     if session.get("role") == "ADMIN":
         return True
     
-    # If staff, check database for specific permission
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(f"SELECT is_full_access, {permission_name} FROM users WHERE username=%s", (session.get("username"),))
@@ -123,9 +119,8 @@ def has_permission(permission_name):
     release_db_connection(conn)
     
     if res:
-        return res[0] or res[1] # True if full access or has specific permission
+        return res[0] or res[1]
     return False
-
 
 @app.route("/", methods=["GET","POST"])
 def login():
@@ -142,11 +137,10 @@ def login():
 
         if user:
             session["username"] = username
-            session["role"] = user[0]
+            session["role"] = user[0].upper()
             return redirect("/dashboard")
 
     return render_template("login.html")
-
 
 @app.route("/users")
 def users():
@@ -155,13 +149,11 @@ def users():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Fetching all columns including permissions for users.html table template layout
-    cursor.execute("SELECT id, username, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users ORDER BY username")
+    cursor.execute("SELECT id, username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users ORDER BY username")
     users_list = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
     return render_template("users.html", users=users_list)
-
 
 @app.route("/add_user", methods=["GET","POST"])
 def add_user():
@@ -173,25 +165,27 @@ def add_user():
         password = request.form.get("password")
         role = request.form.get("role").upper()
         
-        # Getting permission checkboxes values
-        is_full = request.form.get("is_full_access") == "true"
+        is_full = request.form.get("is_full_access") == "true" or role == "ADMIN"
         can_rep = request.form.get("can_view_reports") == "true" or is_full
         can_srv = request.form.get("can_manage_services") == "true" or is_full
         can_exp = request.form.get("can_manage_expenses") == "true" or is_full
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (username, password, role, can_rep, can_srv, can_exp, is_full))
-        conn.commit()
-        cursor.close()
-        release_db_connection(conn)
+        try:
+            cursor.execute("""
+                INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (username, password, role, can_rep, can_srv, can_exp, is_full))
+            conn.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            cursor.close()
+            release_db_connection(conn)
         return redirect("/users")
 
     return render_template("add_user.html")
-
 
 @app.route("/edit_user/<int:id>", methods=["GET","POST"])
 def edit_user(id):
@@ -206,7 +200,7 @@ def edit_user(id):
         password = request.form.get("password")
         role = request.form.get("role").upper()
         
-        is_full = request.form.get("is_full_access") == "true"
+        is_full = request.form.get("is_full_access") == "true" or role == "ADMIN"
         can_rep = request.form.get("can_view_reports") == "true" or is_full
         can_srv = request.form.get("can_manage_services") == "true" or is_full
         can_exp = request.form.get("can_manage_expenses") == "true" or is_full
@@ -225,7 +219,6 @@ def edit_user(id):
     cursor.close()
     release_db_connection(conn)
     return render_template("edit_user.html", user=user)
-
 
 @app.route("/new_bill", methods=["GET", "POST"])
 def new_bill():
@@ -315,7 +308,6 @@ def new_bill():
     services_list = [{'name': r[0], 'type': r[1], 'charge': r[2]} for r in services]
     return render_template("new_bill.html", services=services_list)
 
-
 @app.route("/reports")
 def reports():
     if not has_permission("can_view_reports"):
@@ -370,7 +362,6 @@ def reports():
         search=search
     )
 
-
 @app.route("/bill/<int:bill_id>")
 def bill_view(bill_id):
     if "username" not in session:
@@ -404,7 +395,6 @@ def bill_view(bill_id):
     
     return render_template("bill_view.html", bill=bill_list, items=items_list)
 
-
 @app.route("/balance_sheet")
 def balance_sheet():
     if not has_permission("can_view_reports"):
@@ -420,7 +410,6 @@ def balance_sheet():
     cursor.close()
     release_db_connection(conn)
     return render_template("balance_sheet.html", data=data, total=total)
-
 
 @app.route("/staff_report", methods=["GET"])
 def staff_report():
@@ -459,7 +448,6 @@ def staff_report():
         from_date=from_date,
         to_date=to_date
     )
-
 
 @app.route("/service_report", methods=["GET"])
 def service_report():
@@ -501,7 +489,6 @@ def service_report():
         to_date=to_date
     )
 
-
 @app.route("/date_report", methods=["GET", "POST"])
 def date_report():
     if not has_permission("can_view_reports"):
@@ -524,7 +511,6 @@ def date_report():
     cursor.close()
     release_db_connection(conn)
     return render_template("date_report.html", data=data, total=total)
-
 
 @app.route("/expense", methods=["GET","POST"])
 def expense():
@@ -550,7 +536,6 @@ def expense():
     cursor.close()
     release_db_connection(conn)
     return render_template("expense.html", data=data)
-
 
 @app.route("/edit_expense/<int:id>", methods=["GET","POST"])
 def edit_expense(id):
@@ -578,7 +563,6 @@ def edit_expense(id):
     release_db_connection(conn)
     return render_template("edit_expense.html", expense=expense_data)
 
-
 @app.route("/delete_expense/<int:id>")
 def delete_expense(id):
     if not has_permission("can_manage_expenses"):
@@ -591,7 +575,6 @@ def delete_expense(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/expense")
-
 
 @app.route("/profit_loss", methods=["GET"])
 def profit_loss():
@@ -627,7 +610,6 @@ def profit_loss():
         selected_date=selected_date
     )
 
-
 @app.route("/delete_bill/<int:bill_id>")
 def delete_bill(bill_id):
     if session.get("role") != "ADMIN":
@@ -642,7 +624,6 @@ def delete_bill(bill_id):
     release_db_connection(conn)
     return redirect("/reports")
 
-
 @app.route("/check")
 def check():
     if session.get("role") != "ADMIN":
@@ -655,19 +636,16 @@ def check():
     release_db_connection(conn)
     return str(data)
 
-
 @app.route("/dashboard")
 def dashboard():
     if "username" not in session:
         return redirect("/")
         
-    # Send permissions to frontend to show/hide menu sidebars
     can_rep = has_permission("can_view_reports")
     can_srv = has_permission("can_manage_services")
     can_exp = has_permission("can_manage_expenses")
     
     return render_template("dashboard.html", role=session.get("role"), can_reports=can_rep, can_services=can_srv, can_expenses=can_exp)
-
 
 @app.route("/collection_report")
 def collection_report():
@@ -681,7 +659,6 @@ def collection_report():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # If user is just standard STAFF without full reports access, show only their own collection data
     if role == "STAFF" and not has_permission("can_view_reports"):
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
         total_collection = cursor.fetchone()[0]
@@ -695,7 +672,6 @@ def collection_report():
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='UPI' AND bill_date=%s", (username, selected_date))
         upi_total = cursor.fetchone()[0]
     else:
-        # Admin or Staff with Report permissions can see overall collection
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE bill_date=%s", (selected_date,))
         total_collection = cursor.fetchone()[0]
 
@@ -712,7 +688,6 @@ def collection_report():
     release_db_connection(conn)
     return render_template("collection_report.html", role=role, selected_date=selected_date, total_collection=total_collection, bill_count=bill_count, cash_total=cash_total, upi_total=upi_total)
 
-
 @app.route("/service_management")
 def service_management():
     if not has_permission("can_manage_services"):
@@ -726,12 +701,10 @@ def service_management():
     release_db_connection(conn)
     return render_template("service_management.html", data=data)
 
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
-
 
 @app.route("/add_service", methods=["GET","POST"])
 def add_service():
@@ -740,10 +713,8 @@ def add_service():
 
     if request.method == "POST":
         service_name = request.form.get("service_name")
-        
         charge_val = request.form.get("charge")
         charge = float(charge_val) if charge_val and charge_val.strip() != "" else 0.0
-        
         service_type = request.form.get("service_type")
 
         conn = get_db_connection()
@@ -768,7 +739,6 @@ def add_service():
         return redirect("/service_management")
 
     return render_template("add_service.html")
-
 
 @app.route("/edit_service/<int:id>", methods=["GET","POST"])
 def edit_service(id):
@@ -809,7 +779,6 @@ def edit_service(id):
     release_db_connection(conn)
     return render_template("edit_service.html", service=service, slabs=slabs)
 
-
 @app.route("/delete_service/<int:id>")
 def delete_service(id):
     if not has_permission("can_manage_services"):
@@ -822,7 +791,6 @@ def delete_service(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/service_management")
-
 
 @app.route("/delete_user/<int:id>")
 def delete_user(id):
@@ -844,7 +812,6 @@ def delete_user(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/users")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
