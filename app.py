@@ -76,7 +76,7 @@ def init_db():
     )
     """)
 
-    # Fresh setup for dynamic permissions row mappings
+    # ടേബിൾ ഫ്രഷ് ആയി എല്ലാ മൈക്രോ പെർമിഷൻ കോളങ്ങളോടും കൂടി ക്രിയേറ്റ് ചെയ്യുന്നു
     cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
 
     cursor.execute('''
@@ -85,9 +85,15 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
             role TEXT DEFAULT 'STAFF',
-            can_view_reports BOOLEAN DEFAULT FALSE,
-            can_manage_services BOOLEAN DEFAULT FALSE,
-            can_manage_expenses BOOLEAN DEFAULT FALSE,
+            perm_new_bill BOOLEAN DEFAULT FALSE,
+            perm_all_bills BOOLEAN DEFAULT FALSE,
+            perm_collection_rep BOOLEAN DEFAULT FALSE,
+            perm_date_rep BOOLEAN DEFAULT FALSE,
+            perm_staff_rep BOOLEAN DEFAULT FALSE,
+            perm_service_rep BOOLEAN DEFAULT FALSE,
+            perm_expense BOOLEAN DEFAULT FALSE,
+            perm_profit_loss BOOLEAN DEFAULT FALSE,
+            perm_services_mgmt BOOLEAN DEFAULT FALSE,
             is_full_access BOOLEAN DEFAULT FALSE
         )
     ''')
@@ -95,9 +101,9 @@ def init_db():
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
         cursor.execute("""
-        INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
-        VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, ("admin", "admin123", "ADMIN", True, True, True, True))
+        INSERT INTO users (username, password, role, perm_new_bill, perm_all_bills, perm_collection_rep, perm_date_rep, perm_staff_rep, perm_service_rep, perm_expense, perm_profit_loss, perm_services_mgmt, is_full_access) 
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, ("admin", "admin123", "ADMIN", True, True, True, True, True, True, True, True, True, True))
 
     conn.commit()
     cursor.close()
@@ -149,7 +155,7 @@ def users():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users ORDER BY username")
+    cursor.execute("SELECT id, username, password, role, perm_new_bill, perm_all_bills, perm_collection_rep, perm_date_rep, perm_staff_rep, perm_service_rep, perm_expense, perm_profit_loss, perm_services_mgmt, is_full_access FROM users ORDER BY username")
     users_list = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
@@ -165,20 +171,26 @@ def add_user():
         password = request.form.get("password")
         role = request.form.get("role").upper()
         
-        # Mapping selected features dropdown parameters directly dynamically
         selected_features = request.form.getlist("features[]")
         
         is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
-        can_rep = "REPORTS" in selected_features or is_full
-        can_srv = "SERVICES" in selected_features or is_full
-        can_exp = "EXPENSES" in selected_features or is_full
+        
+        p_new_bill = "NEW_BILL" in selected_features or is_full
+        p_all_bills = "ALL_BILLS" in selected_features or is_full
+        p_coll_rep = "COLLECTION_REP" in selected_features or is_full
+        p_date_rep = "DATE_REP" in selected_features or is_full
+        p_staff_rep = "STAFF_REP" in selected_features or is_full
+        p_serv_rep = "SERVICE_REP" in selected_features or is_full
+        p_expense = "EXPENSE" in selected_features or is_full
+        p_prof_loss = "PROFIT_LOSS" in selected_features or is_full
+        p_serv_mgmt = "SERVICES_MGMT" in selected_features or is_full
 
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
-        """, (username, password, role, can_rep, can_srv, can_exp, is_full))
+            INSERT INTO users (username, password, role, perm_new_bill, perm_all_bills, perm_collection_rep, perm_date_rep, perm_staff_rep, perm_service_rep, perm_expense, perm_profit_loss, perm_services_mgmt, is_full_access) 
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (username, password, role, p_new_bill, p_all_bills, p_coll_rep, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
@@ -202,20 +214,27 @@ def edit_user(id):
         selected_features = request.form.getlist("features[]")
         
         is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
-        can_rep = "REPORTS" in selected_features or is_full
-        can_srv = "SERVICES" in selected_features or is_full
-        can_exp = "EXPENSES" in selected_features or is_full
+        
+        p_new_bill = "NEW_BILL" in selected_features or is_full
+        p_all_bills = "ALL_BILLS" in selected_features or is_full
+        p_coll_rep = "COLLECTION_REP" in selected_features or is_full
+        p_date_rep = "DATE_REP" in selected_features or is_full
+        p_staff_rep = "STAFF_REP" in selected_features or is_full
+        p_serv_rep = "SERVICE_REP" in selected_features or is_full
+        p_expense = "EXPENSE" in selected_features or is_full
+        p_prof_loss = "PROFIT_LOSS" in selected_features or is_full
+        p_serv_mgmt = "SERVICES_MGMT" in selected_features or is_full
 
         cursor.execute("""
-            UPDATE users SET username=%s, password=%s, role=%s, can_view_reports=%s, can_manage_services=%s, can_manage_expenses=%s, is_full_access=%s 
+            UPDATE users SET username=%s, password=%s, role=%s, perm_new_bill=%s, perm_all_bills=%s, perm_collection_rep=%s, perm_date_rep=%s, perm_staff_rep=%s, perm_service_rep=%s, perm_expense=%s, perm_profit_loss=%s, perm_services_mgmt=%s, is_full_access=%s 
             WHERE id=%s
-        """, (username, password, role, can_rep, can_srv, can_exp, is_full, id))
+        """, (username, password, role, p_new_bill, p_all_bills, p_coll_rep, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full, id))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
         return redirect("/users")
 
-    cursor.execute("SELECT id, username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users WHERE id=%s", (id,))
+    cursor.execute("SELECT id, username, password, role, perm_new_bill, perm_all_bills, perm_collection_rep, perm_date_rep, perm_staff_rep, perm_service_rep, perm_expense, perm_profit_loss, perm_services_mgmt, is_full_access FROM users WHERE id=%s", (id,))
     user = cursor.fetchone()
     cursor.close()
     release_db_connection(conn)
@@ -223,8 +242,8 @@ def edit_user(id):
 
 @app.route("/new_bill", methods=["GET", "POST"])
 def new_bill():
-    if "username" not in session:
-        return redirect("/")
+    if not has_permission("perm_new_bill"):
+        return redirect("/dashboard")
         
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -311,7 +330,7 @@ def new_bill():
 
 @app.route("/reports")
 def reports():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_all_bills"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -398,7 +417,7 @@ def bill_view(bill_id):
 
 @app.route("/balance_sheet")
 def balance_sheet():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_all_bills"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -414,7 +433,7 @@ def balance_sheet():
 
 @app.route("/staff_report", methods=["GET"])
 def staff_report():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_staff_rep"):
         return redirect("/dashboard")
 
     from_date = request.args.get("from_date")
@@ -452,7 +471,7 @@ def staff_report():
 
 @app.route("/service_report", methods=["GET"])
 def service_report():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_service_rep"):
         return redirect("/dashboard")
 
     from_date = request.args.get("from_date")
@@ -492,7 +511,7 @@ def service_report():
 
 @app.route("/date_report", methods=["GET", "POST"])
 def date_report():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_date_rep"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -515,7 +534,7 @@ def date_report():
 
 @app.route("/expense", methods=["GET","POST"])
 def expense():
-    if not has_permission("can_manage_expenses"):
+    if not has_permission("perm_expense"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -540,7 +559,7 @@ def expense():
 
 @app.route("/edit_expense/<int:id>", methods=["GET","POST"])
 def edit_expense(id):
-    if not has_permission("can_manage_expenses"):
+    if not has_permission("perm_expense"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -566,7 +585,7 @@ def edit_expense(id):
 
 @app.route("/delete_expense/<int:id>")
 def delete_expense(id):
-    if not has_permission("can_manage_expenses"):
+    if not has_permission("perm_expense"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -579,7 +598,7 @@ def delete_expense(id):
 
 @app.route("/profit_loss", methods=["GET"])
 def profit_loss():
-    if not has_permission("can_view_reports"):
+    if not has_permission("perm_profit_loss"):
         return redirect("/dashboard")
 
     selected_date = request.args.get("selected_date")
@@ -642,11 +661,27 @@ def dashboard():
     if "username" not in session:
         return redirect("/")
         
-    can_rep = has_permission("can_view_reports")
-    can_srv = has_permission("can_manage_services")
-    can_exp = has_permission("can_manage_expenses")
+    c_new_bill = has_permission("perm_new_bill")
+    c_all_bills = has_permission("perm_all_bills")
+    c_coll_rep = has_permission("perm_collection_rep")
+    c_date_rep = has_permission("perm_date_rep")
+    c_staff_rep = has_permission("perm_staff_rep")
+    c_serv_rep = has_permission("perm_service_rep")
+    c_expense = has_permission("perm_expense")
+    c_prof_loss = has_permission("perm_profit_loss")
+    c_serv_mgmt = has_permission("perm_services_mgmt")
     
-    return render_template("dashboard.html", role=session.get("role"), can_reports=can_rep, can_services=can_srv, can_expenses=can_exp)
+    return render_template("dashboard.html", 
+                           role=session.get("role"), 
+                           can_new_bill=c_new_bill,
+                           can_all_bills=c_all_bills,
+                           can_collection_rep=c_coll_rep,
+                           can_date_rep=c_date_rep,
+                           can_staff_rep=c_staff_rep,
+                           can_service_rep=c_serv_rep,
+                           can_expense=c_expense,
+                           can_profit_loss=c_prof_loss,
+                           can_services_mgmt=c_serv_mgmt)
 
 @app.route("/collection_report")
 def collection_report():
@@ -660,7 +695,7 @@ def collection_report():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if role == "STAFF" and not has_permission("can_view_reports"):
+    if role == "STAFF" and not has_permission("perm_collection_rep"):
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
         total_collection = cursor.fetchone()[0]
 
@@ -691,7 +726,7 @@ def collection_report():
 
 @app.route("/service_management")
 def service_management():
-    if not has_permission("can_manage_services"):
+    if not has_permission("perm_services_mgmt"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -709,7 +744,7 @@ def logout():
 
 @app.route("/add_service", methods=["GET","POST"])
 def add_service():
-    if not has_permission("can_manage_services"):
+    if not has_permission("perm_services_mgmt"):
         return redirect("/dashboard")
 
     if request.method == "POST":
@@ -743,7 +778,7 @@ def add_service():
 
 @app.route("/edit_service/<int:id>", methods=["GET","POST"])
 def edit_service(id):
-    if not has_permission("can_manage_services"):
+    if not has_permission("perm_services_mgmt"):
         return redirect("/dashboard")
         
     conn = get_db_connection()
@@ -782,7 +817,7 @@ def edit_service(id):
 
 @app.route("/delete_service/<int:id>")
 def delete_service(id):
-    if not has_permission("can_manage_services"):
+    if not has_permission("perm_services_mgmt"):
         return redirect("/dashboard")
         
     conn = get_db_connection()
