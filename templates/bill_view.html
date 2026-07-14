@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bill Details</title>
+
+    <style>
+        body{
+            font-family:Arial;
+            background:#f4f4f4;
+            margin:0;
+        }
+
+        .header{
+            background:#0066cc;
+            color:white;
+            text-align:center;
+            padding:20px;
+        }
+
+        .container{
+            width:700px;
+            margin:30px auto;
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0px 0px 10px #ccc;
+        }
+
+        /* Centered Header Wrapper */
+        .company-header {
+            display: flex;
+            align-items: center; 
+            justify-content: center; 
+            gap: 30px; 
+            margin: 10px auto 25px auto;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 20px;
+            width: 100%;
+        }
+
+        .header-content-block {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .header-content-block img {
+            margin: 0;
+            display: block;
+        }
+
+        .brand-details {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            text-align: center; 
+        }
+
+        .brand-details h2 {
+            margin: 0 0 4px 0;
+            color: #0066cc;
+            font-size: 28px; 
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+
+        .brand-details .tsr-code {
+            font-size: 15px;
+            font-weight: bold;
+            color: #111111;
+            margin-bottom: 2px;
+        }
+
+        .brand-details .address-line {
+            font-size: 14px;
+            color: #111111;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .brand-details .contact-details {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 13px; 
+            color: #111111;
+        }
+
+        .info-row{
+            display:flex;
+            justify-content:space-between;
+            align-items:flex-start;
+            margin-bottom:20px;
+        }
+
+        .info-row p {
+            margin: 5px 0;
+        }
+
+        .left-info{
+            width:48%;
+        }
+
+        .right-info{
+            width:48%;
+            text-align:right;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:20px;
+        }
+
+        th,td{
+            border:1px solid #ccc;
+            padding:10px;
+        }
+
+        th{
+            background:#0066cc;
+            color:white;
+        }
+
+        .num-col {
+            text-align: center;
+        }
+
+        .btn{
+            display:inline-block;
+            padding:10px 20px;
+            background:#0066cc;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+            margin-top:20px;
+            border:none;
+            cursor:pointer;
+        }
+
+        .total-box{
+            width:250px;
+            margin-top:20px;
+            margin-left:auto;
+            text-align:center;
+            padding:15px;
+            background:#f2f8ff;
+            border:2px solid #0066cc;
+            border-radius:8px;
+            font-size:30px;
+            font-weight:bold;
+            color:#0066cc;
+        }
+
+        .notes-display-box {
+            margin-top: 25px;
+            padding: 15px;
+            border: 1px solid #ced4da;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            text-align: left;
+        }
+
+        /* ===================================================
+           STANDARD FULL A4 PORTRAIT PRINT CONTROLS
+           =================================================== */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 15mm 15mm 15mm 15mm;
+            }
+
+            .btn, .header {
+                display: none !important;
+            }
+            
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box;
+            }
+
+            .company-header {
+                margin: 0 auto 30px auto !important;
+                padding-bottom: 20px !important;
+            }
+
+            .brand-details h2 {
+                font-size: 30px !important;
+            }
+
+            .brand-details .tsr-code, 
+            .brand-details .address-line, 
+            .brand-details .contact-details {
+                color: #000000 !important;
+                font-size: 15px !important;
+            }
+
+            .info-row {
+                margin-bottom: 30px !important;
+                font-size: 16px !important;
+            }
+
+            .info-row p {
+                margin: 8px 0 !important;
+            }
+
+            table {
+                margin-top: 25px !important;
+            }
+
+            table th {
+                font-size: 16px !important;
+                padding: 12px !important;
+            }
+
+            table td {
+                font-size: 16px !important;
+                padding: 14px 12px !important;
+            }
+
+            .total-box {
+                font-size: 26px !important;
+                padding: 15px !important;
+                margin-top: 30px !important;
+                width: 250px !important;
+            }
+
+            .notes-display-box {
+                margin-top: 30px !important;
+                padding: 15px !important;
+                font-size: 16px !important;
+            }
+
+            hr {
+                margin: 40px 0 20px 0 !important;
+            }
+
+            h3 {
+                margin: 10px 0 !important;
+                font-size: 20px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Bill Details</h1>
+</div>
+
+<div class="container">
+
+    <div class="company-header">
+        <div class="header-content-block">
+            <!-- CSC Official Logo Path -->
+            <img src="/static/logo.png" width="130" height="80" style="-webkit-print-color-adjust: exact; print-color-adjust: exact; display: block;" alt="CSC Logo">
+
+            <div class="brand-details">
+                <h2>COMMON SERVICES CENTER</h2>
+                <div class="tsr-code">CSC ID : 374016860011</div>
+                <div class="address-line">E-SEVANA KENDRAM, Paramelpadi, Kondazhy - 679106</div>
+                <div class="contact-details">
+                    <b>Phone:</b> 8301057498 &nbsp;|&nbsp; <b>Email:</b> csckondazhy@gmail.com
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-row">
+        <div class="left-info">
+            <p><b>Customer :</b> {{ bill[3] }}</p>
+            <p><b>Mobile :</b> {{ bill[4] }}</p>
+            <p><b>Staff :</b> {{ bill[5] }}</p>
+            <p><b>Payment :</b> {{ bill[8] }}</p>
+        </div>
+
+        <div class="right-info">
+            <p><b>Bill No :</b> {{ bill[1] }}</p>
+            <p><b>Date :</b> {{ bill[2] }}</p>
+            <p><b>Time :</b> {{ bill[7] }}</p>
+        </div>
+    </div>
+
+    <table>
+        <tr>
+            <th>Service</th>
+            <th style="width: 15%;" class="num-col">Qty</th>
+            <th style="width: 25%;">Amount</th>
+        </tr>
+
+        {% for item in items %}
+        <tr>
+            <td>{{ item[0] }}</td>
+            <td class="num-col">{{ item[4] }}</td> 
+            <td>₹ {{ item[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="total-box">
+        Total : ₹ {{ bill[6] }}
+    </div>
+
+    {% if bill[9] %}
+    <div class="notes-display-box">
+        <div style="font-weight: bold; font-size: 14px; color: #495057; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">
+            Application Notes / Reference Details:
+        </div>
+        <div style="font-size: 16px; color: #212529; white-space: pre-line; font-weight: 500; line-height: 1.5;">
+            {{ bill[9] }}
+        </div>
+    </div>
+    {% endif %}
+
+    <br>
+    <hr>
+
+    <center>
+        <h3>Thank You Visit Again</h3>
+    </center>
+
+    <button class="btn" onclick="window.print()">
+        Print Receipt
+    </button>
+
+    <button onclick="history.back()" class="btn">
+        Back
+    </button>
+
+</div>
+
+</body>
+</html>
