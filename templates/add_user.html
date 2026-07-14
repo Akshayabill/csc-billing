@@ -11,7 +11,7 @@ body{
 }
 
 .header{
-    background:#0066cc; /* CSC Blue Theme */
+    background:#0066cc;
     color:white;
     padding:25px;
     text-align:center;
@@ -64,13 +64,19 @@ body{
 
 <div class="mb-3" id="feature_section">
     <label class="form-label"><b>Select Permitted Dashboard Features</b></label>
-    <p class="text-muted" style="font-size: 12px; margin-top:-5px;">Ctrl കീ അമർത്തിപ്പിടിച്ച് ഒന്നിൽ കൂടുതൽ ഫീച്ചറുകൾ ഒരുമിച്ച് സെലക്ട് ചെയ്യാം (Or cmd key on Mac)</p>
+    <p class="text-muted" style="font-size: 12px; margin-top:-5px;">Ctrl കീ അമർത്തിപ്പിടിച്ച് ആവശ്യമുള്ളവ ഓരോന്നായി സെലക്ട് ചെയ്യാം</p>
     
-    <select name="features[]" class="form-select" multiple style="height: 120px;">
+    <select name="features[]" class="form-select" multiple style="height: 220px;">
         <option value="FULL_ACCESS" style="color: #dc3545; font-weight: bold;">[ Full Access / Manager ]</option>
-        <option value="REPORTS">Reports (റിപ്പോർട്ടുകൾ കാണാൻ)</option>
-        <option value="SERVICES">Service Management (സർവീസുകൾ മാറ്റാൻ)</option>
-        <option value="EXPENSES">Expense Management (ചിലവുകൾ കൂട്ടാൻ)</option>
+        <option value="NEW_BILL">New Bill Entry (പുതിയ ബില്ലടിക്കാൻ)</option>
+        <option value="ALL_BILLS">All Bill Reports / Search (ബില്ലുകൾ പരിശോധിക്കാൻ)</option>
+        <option value="COLLECTION_REP">Collection Report (ഡെയിലി കളക്ഷൻ റിപ്പോർട്ട്)</option>
+        <option value="DATE_REP">Datewise Report (തീയതി വെച്ചുള്ള റിപ്പോർട്ട്)</option>
+        <option value="STAFF_REP">Staff Performance Report (സ്റ്റാഫ് കളക്ഷൻ റിപ്പോർട്ട്)</option>
+        <option value="SERVICE_REP">Service-wise Report (സർവീസ് തിരിച്ചുള്ള റിപ്പോർട്ട്)</option>
+        <option value="EXPENSE">Expense Entry / Track (ചിലവുകൾ നിയന്ത്രിക്കാൻ)</option>
+        <option value="PROFIT_LOSS">Profit & Loss Analysis (ലാഭ നഷ്ട കണക്കുകൾ)</option>
+        <option value="SERVICES_MGMT">Service Management (സർവീസ് റേറ്റ് മാറ്റാൻ)</option>
     </select>
 </div>
 
