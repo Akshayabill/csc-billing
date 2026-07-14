@@ -6,13 +6,12 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-
 body{
     background:#f4f4f4;
 }
 
 .header{
-    background:#0d6efd;
+    background:#0066cc; /* CSC Blue Theme */
     color:white;
     padding:25px;
     text-align:center;
@@ -21,7 +20,7 @@ body{
 }
 
 .form-box{
-    width:500px;
+    width:550px;
     margin:auto;
     margin-top:40px;
     background:white;
@@ -30,13 +29,20 @@ body{
     box-shadow:0 0 10px rgba(0,0,0,.1);
 }
 
+.perm-box {
+    margin-top: 20px; 
+    background: #f8f9fa; 
+    padding: 20px; 
+    border-radius: 8px; 
+    border: 1px solid #dee2e6;
+}
 </style>
 
 </head>
 <body>
 
 <div class="header">
-    Add User
+    Add New User / Staff
 </div>
 
 <div class="form-box">
@@ -44,104 +50,83 @@ body{
 <form method="POST">
 
 <div class="mb-3">
-    <label class="form-label">
-        Username
-    </label>
-
-    <input
-        type="text"
-        name="username"
-        class="form-control"
-        required>
+    <label class="form-label"><b>Username</b></label>
+    <input type="text" name="username" class="form-control" required>
 </div>
 
 <div class="mb-3">
-
-    <label class="form-label">
-        Password
-    </label>
-
+    <label class="form-label"><b>Password</b></label>
     <div class="input-group">
-
-        <input
-            type="password"
-            id="password"
-            name="password"
-            class="form-control"
-            required>
-
-        <button
-            type="button"
-            class="btn btn-outline-secondary"
-            onclick="togglePassword()">
-
-            👁
-
-        </button>
-
+        <input type="password" id="password" name="password" class="form-control" required>
+        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">👁</button>
     </div>
-
 </div>
 
 <div class="mb-3">
-
-    <label class="form-label">
-        Role
-    </label>
-
-    <select
-        name="role"
-        class="form-select">
-
-        <option value="ADMIN">
-            ADMIN
-        </option>
-
-        <option value="STAFF" selected>
-            STAFF
-        </option>
-
+    <label class="form-label"><b>Role</b></label>
+    <select name="role" id="user_role" class="form-select" onchange="checkRole()">
+        <option value="ADMIN">ADMIN</option>
+        <option value="STAFF" selected>STAFF</option>
     </select>
-
 </div>
 
-<button
-    type="submit"
-    class="btn btn-success">
+<!-- Staff Permission Section -->
+<div class="perm-box" id="permission_section">
+    <h5 style="margin-top: 0; color: #0066cc; font-weight: bold; border-bottom: 2px solid #ddd; padding-bottom: 8px;">
+        Staff Permissions Control
+    </h5>
+    
+    <label style="display: block; margin-bottom: 12px; cursor: pointer;">
+        <input type="checkbox" name="is_full_access" value="true" onchange="toggleAllPerms(this)"> 
+        <span style="color: #dc3545; font-weight: bold;">Full Access (എല്ലാ പെർമിഷനും നൽകുക)</span>
+    </label>
+    <hr style="margin: 10px 0;">
+    
+    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" class="perm-check" name="can_view_reports" value="true"> View Reports (റിപ്പോർട്ടുകൾ കാണാം)
+    </label>
+    
+    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" class="perm-check" name="can_manage_services" value="true"> Manage Services (സർവീസുകൾ മാറ്റാം)
+    </label>
+    
+    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" class="perm-check" name="can_manage_expenses" value="true"> Track Expenses (ചിലവുകൾ നിയന്ത്രിക്കാം)
+    </label>
+</div>
 
-    Save User
-
-</button>
-
-<a
-    href="/users"
-    class="btn btn-secondary">
-
-    Back
-
-</a>
+<div class="mt-4">
+    <button type="submit" class="btn btn-success px-4">Save User</button>
+    <a href="/users" class="btn btn-secondary px-4">Back</a>
+</div>
 
 </form>
 
 </div>
 
 <script>
+function togglePassword() {
+    let pwd = document.getElementById("password");
+    pwd.type = (pwd.type == "password") ? "text" : "password";
+}
 
-function togglePassword()
-{
-    let pwd =
-    document.getElementById("password");
-
-    if(pwd.type=="password")
-    {
-        pwd.type="text";
-    }
-    else
-    {
-        pwd.type="password";
+function checkRole() {
+    let role = document.getElementById("user_role").value;
+    let permSection = document.getElementById("permission_section");
+    if(role === "ADMIN") {
+        permSection.style.display = "none";
+    } else {
+        permSection.style.display = "block";
     }
 }
 
+function toggleAllPerms(master) {
+    let checkboxes = document.getElementsByClassName('perm-check');
+    for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = master.checked;
+        checkboxes[i].disabled = master.checked;
+    }
+}
 </script>
 
 </body>
