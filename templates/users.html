@@ -11,7 +11,7 @@
         }
 
         .header{
-            background:#0d6efd;
+            background:#0066cc; /* CSC Blue Theme */
             color:white;
             padding:25px;
             text-align:center;
@@ -26,13 +26,22 @@
             border-radius:10px;
             box-shadow:0 0 10px rgba(0,0,0,.1);
         }
+        .badge-perm {
+            background-color: #e9ecef;
+            color: #495057;
+            margin-right: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: inline-block;
+        }
     </style>
 
 </head>
 <body>
 
 <div class="header">
-    User Management
+    CSC User & Staff Management
 </div>
 
 <div class="container">
@@ -40,43 +49,53 @@
     <div class="card-box">
 
         <a href="/add_user" class="btn btn-success mb-3">
-            + Add User
+            + Add New User / Staff
         </a>
 
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped align-middle">
 
-            <tr>
-                <th>Sl No</th>
+            <tr class="table-primary">
+                <th style="width: 8%;">Sl No</th>
                 <th>Username</th>
-                <th>Role</th>
-                <th>Actions</th>
+                <th style="width: 15%;">Role</th>
+                <th>Active Permissions</th>
+                <th style="width: 20%;">Actions</th>
             </tr>
 
             {% for user in users %}
 
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{{ user[1] }}</td>
-                <td>{{ user[2] }}</td>
+                <td><b>{{ user[1] }}</b></td>
                 <td>
+                    <span class="badge {% if user[3] == 'ADMIN' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+                        {{ user[3] }}
+                    </span>
+                </td>
+                <td>
+                    {% if user[3] == 'ADMIN' %}
+                        <span class="badge bg-success">All Access (System Admin)</span>
+                    {% else %}
+                        {% if user[7] %}
+                            <span class="badge bg-danger">Full Access</span>
+                        {% else %}
+                            {% if user[4] %}<span class="badge-perm">Reports</span>{% endif %}
+                            {% if user[5] %}<span class="badge-perm">Services</span>{% endif %}
+                            {% if user[6] %}<span class="badge-perm">Expenses</span>{% endif %}
+                            {% if not user[4] and not user[5] and not user[6] %}
+                                <span class="text-muted" style="font-size: 13px;">Billing Only</span>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/edit_user/{{ user[0] }}" class="btn btn-warning btn-sm">Edit</a>
 
-                    <a
-                        href="/edit_user/{{ user[0] }}"
-                        class="btn btn-warning btn-sm">
-                        Edit
-                    </a>
-
-                    {% if user[1].lower() != "admin" and user[2].upper() != "ADMIN" %}
-
-                    <a
-                        href="/delete_user/{{ user[0] }}"
-                        class="btn btn-danger btn-sm"
-                        onclick="return confirm('Delete this user?')">
+                    {% if user[1].lower() != "admin" and user[3].upper() != "ADMIN" %}
+                    <a href="/delete_user/{{ user[0] }}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this staff user?')">
                         Delete
                     </a>
-
                     {% endif %}
-
                 </td>
             </tr>
 
@@ -84,8 +103,8 @@
 
         </table>
 
-        <a href="/dashboard" class="btn btn-primary">
-            Back
+        <a href="/dashboard" class="btn btn-primary px-4">
+            Back to Dashboard
         </a>
 
     </div>
