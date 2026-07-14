@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Date Wise Collection Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            margin: 0;
+        }
+
+        .header {
+            background: #0066cc;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Professional Search Filter Box Card */
+        .filter-container {
+            max-width: 800px;
+            margin: 35px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .filter-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .custom-input {
+            font-size: 16px;
+            padding: 10px 15px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+        }
+
+        .btn-search {
+            background: #0066cc;
+            color: white;
+            font-weight: bold;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: none;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn-search:hover {
+            background: #0052a3;
+        }
+
+        /* Report Matrix Data Table Card Design */
+        .table-container {
+            max-width: 950px;
+            margin: 0 auto 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #212529;
+            margin-bottom: 20px;
+            border-left: 4px solid #0066cc;
+            padding-left: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #0066cc;
+            color: white;
+            padding: 14px 12px;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #dee2e6;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        /* Summary Statement Section */
+        .total-collection-badge {
+            max-width: 950px;
+            margin: 0 auto 40px auto;
+            background: #e6f0ff;
+            border: 2px dashed #0066cc;
+            border-radius: 8px;
+            padding: 15px 25px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #0066cc;
+        }
+
+        .btn-back {
+            display: block;
+            width: 150px;
+            margin: 40px auto;
+            text-align: center;
+            background: #6c757d;
+            color: white;
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Date Wise Collection Report</h1>
+</div>
+
+<div class="filter-container">
+    <div class="filter-title">Select Date Range</div>
+    <form method="POST">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">From Date</label>
+                <input 
+                    type="date" 
+                    name="from_date" 
+                    class="form-control custom-input" 
+                    required>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">To Date</label>
+                <input 
+                    type="date" 
+                    name="to_date" 
+                    class="form-control custom-input" 
+                    required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-search">Search</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="table-container container">
+    <div class="table-title">Generated Collection Records</div>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Bill No</th>
+                    <th style="width: 25%;">Date</th>
+                    <th style="width: 30%;">Customer Name</th>
+                    <th style="width: 20%;" class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td><b>{{ row[0] }}</b></td>
+                    <td>{{ row[1] }}</td>
+                    <td>{{ row[2] }}</td>
+                    <td class="text-end" style="font-weight: bold; color: #212529;">₹ {{ row[3] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No data logged within this selected date range.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="total-collection-badge d-flex justify-content-between align-items-center container">
+    <span>Total Collection Statement Summary:</span>
+    <span>₹ {{ total }}</span>
+</div>
+
+<a href="/dashboard" class="btn-back">
+    Back
+</a>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Edit Service</title>
+
+<style>
+body{
+    font-family:Arial;
+    background:#f4f4f4;
+    margin:0;
+}
+
+.header{
+    background:#0066cc;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    width:500px;
+    margin:30px auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px #ccc;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin-bottom:15px;
+    box-sizing:border-box;
+}
+
+input[type="radio"]{
+    width:auto;
+}
+
+label.input-label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.radio-container {
+    background: #f9f9f9;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+}
+
+button{
+    background:green;
+    color:white;
+    border:none;
+    padding:12px 20px;
+    border-radius:5px;
+    cursor:pointer;
+    font-weight: bold;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+table th,
+table td{
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:center;
+}
+
+table th{
+    background:#0066cc;
+    color:white;
+}
+</style>
+
+<script>
+function toggleTypeOnEdit() {
+    let serviceType = document.querySelector('input[name="service_type"]:checked').value;
+    let chargeLabel = document.getElementById("edit_charge_label");
+    let chargeInput = document.getElementById("edit_charge_input");
+    let slabSection = document.getElementById("edit_slab_section");
+
+    if (serviceType === "VARIABLE") {
+        if (chargeInput) chargeInput.style.display = "none";
+        if (chargeLabel) chargeLabel.style.display = "none";
+        if (slabSection) slabSection.style.display = "block";
+    } else if (serviceType === "QUANTITY") {
+        if (chargeInput) chargeInput.style.display = "block";
+        if (chargeLabel) {
+            chargeLabel.style.display = "block";
+            chargeLabel.innerText = "Service Charge Per Page (₹)";
+        }
+        if (slabSection) slabSection.style.display = "none";
+    } else {
+        if (chargeInput) chargeInput.style.display = "block";
+        if (chargeLabel) {
+            chargeLabel.style.display = "block";
+            chargeLabel.innerText = "Service Charge (₹)";
+        }
+        if (slabSection) slabSection.style.display = "none";
+    }
+}
+
+window.onload = function() {
+    toggleTypeOnEdit();
+};
+</script>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Edit Service</h1>
+</div>
+
+<div class="container">
+
+<form method="post">
+
+    <label class="input-label">Service Name</label>
+    <input
+    type="text"
+    name="service_name"
+    value="{{ service[1] }}"
+    required>
+
+    <label id="edit_charge_label" class="input-label">Service Charge (₹)</label>
+    <input
+    id="edit_charge_input"
+    type="number"
+    step="0.01"
+    name="charge"
+    value="{{ service[2] }}">
+
+    <label class="input-label">Service Charge Model Type</label>
+    <div class="radio-container">
+        <label>
+        <input
+        type="radio"
+        name="service_type"
+        value="FIXED"
+        {% if service[3]=="FIXED" %}checked{% endif %}
+        onclick="toggleTypeOnEdit()">
+        Fixed Charge
+        </label>
+        
+        <br><br>
+        
+        <label>
+        <input
+        type="radio"
+        name="service_type"
+        value="VARIABLE"
+        {% if service[3]=="VARIABLE" %}checked{% endif %}
+        onclick="toggleTypeOnEdit()">
+        Variable (Dynamic Slab)
+        </label>
+
+        <br><br>
+
+        <label>
+        <input
+        type="radio"
+        name="service_type"
+        value="QUANTITY"
+        {% if service[3]=="QUANTITY" %}checked{% endif %}
+        onclick="toggleTypeOnEdit()">
+        Quantity Based (Page Count)
+        </label>
+    </div>
+
+    <div id="edit_slab_section" style="display:none;">
+        {% if service[3] == "VARIABLE" %}
+        <h3>Service Slabs</h3>
+        <table>
+            <tr>
+            <th>From</th>
+            <th>To</th>
+            <th>Charge</th>
+            </tr>
+            {% for slab in slabs %}
+            <tr>
+            <td>
+                <input
+                type="number"
+                step="0.01"
+                name="from_amount[]"
+                value="{{ slab[0] }}">
+            </td>
+            <td>
+                <input
+                type="number"
+                step="0.01"
+                name="to_amount[]"
+                value="{{ slab[1] }}">
+            </td>
+            <td>
+                <input
+                type="number"
+                step="0.01"
+                name="service_charge[]"
+                value="{{ slab[2] }}">
+            </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <br><br>
+        {% endif %}
+    </div>
+
+    <button type="submit">
+    Update Service
+    </button>
+
+</form>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Bill</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            background:#f4f4f4;
+            margin:0;
+        }
+
+        .header{
+            background:#0066cc;
+            color:white;
+            text-align:center;
+            padding:20px;
+        }
+
+        .container{
+            width:700px;
+            margin:30px auto;
+            background:white;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0 0 10px #ccc;
+        }
+
+        label{
+            font-weight:bold;
+        }
+
+        input{
+            width:100%;
+            padding:10px;
+            margin-top:5px;
+            margin-bottom:15px;
+            box-sizing:border-box;
+        }
+
+        .btn{
+            background:green;
+            color:white;
+            border:none;
+            padding:12px 20px;
+            cursor:pointer;
+            border-radius:5px;
+            font-size:16px;
+        }
+
+        .back{
+            background:#0066cc;
+            margin-left:10px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Edit Bill</h1>
+</div>
+
+<div class="container">
+
+<form method="post" id="billForm">
+
+    <label>Customer Name</label>
+    <input
+        type="text"
+        name="customer_name"
+        value="{{ bill[3] }}"
+        required>
+
+    <label>Mobile Number</label>
+    <input
+        type="text"
+        name="mobile"
+        value="{{ bill[4] }}"
+        required>
+
+<label>Selected Services</label>
+
+<div
+id="selectedServices"
+style="border:1px solid #ccc;padding:15px;margin-bottom:15px;">
+
+{% for service in services %}
+
+{% if service[0] in selected_services %}
+
+<input
+type="checkbox"
+name="services"
+value="{{ service[0] }}"
+style="width:auto;"
+checked>
+
+{{ service[0] }}
+
+{% if service[1] == "VARIABLE" %}
+
+<div
+id="container_{{ service[0].replace(' ','_') }}">
+
+{% for amount in variable_amounts.get(service[0], []) %}
+
+<input
+type="number"
+name="bill_amount_{{ service[0] }}"
+value="{{ amount }}"
+placeholder="Enter Bill Amount"
+style="width:200px;"><br>
+
+{% endfor %}
+
+</div>
+
+<button
+type="button"
+onclick="addAmountField('{{ service[0] }}')">
++ Add Another
+</button>
+
+{% endif %}
+
+<br><br>
+
+{% endif %}
+
+{% endfor %}
+
+<label>Add New Service</label>
+
+<select id="serviceDropdown" style="width:100%;padding:10px;margin-bottom:15px;">
+
+
+    <option value="">
+        Select Service
+    </option>
+
+    {% for service in services %}
+
+        {% if service[0] not in selected_services %}
+
+        <option value="{{ service[0] }}">
+            {{ service[0] }}
+        </option>
+
+        {% endif %}
+
+    {% endfor %}
+
+</select>
+
+<button
+type="button"
+onclick="addService()"
+style="
+padding:10px;
+background:#28a745;
+color:white;
+border:none;
+border-radius:5px;
+margin-top:10px;">
+Add Service
+</button>
+
+</div>
+
+
+    <button type="submit" class="btn">
+        Update Bill
+    </button>
+
+    <button
+    type="button"
+    class="btn back"
+    onclick="history.back()">
+    Back
+</button>
+
+</form>
+
+</div>
+
+<script>
+
+var variableServices =
+{{ variable_services|tojson }};
+
+function addAmountField(service){
+
+    let container =
+    document.getElementById(
+        "container_" +
+        service.replace(/ /g,'_')
+    );
+
+    let input =
+    document.createElement("input");
+
+    input.type = "number";
+    input.name = "bill_amount_" + service;
+    input.placeholder = "Enter Bill Amount";
+    input.style.width = "200px";
+
+    container.appendChild(input);
+    container.appendChild(
+        document.createElement("br")
+    );
+}
+
+function addService(){
+
+    var dropdown =
+        document.getElementById(
+            "serviceDropdown"
+        );
+
+    var service =
+        dropdown.value;
+
+    if(service==""){
+        return;
+    }
+
+    var container =
+        document.getElementById(
+            "selectedServices"
+        );
+
+    var html =
+    `
+    <div style="margin-bottom:10px;">
+
+        <input
+        type="checkbox"
+        name="services"
+        value="${service}"
+        checked
+        style="width:auto;">
+
+        ${service}
+
+        <div id="amount_${service.replace(/ /g,'_')}"></div>
+
+     </div>
+     `;
+
+    container.insertAdjacentHTML(
+        "beforeend",
+        html
+    );
+
+if(
+    variableServices.includes(
+        service
+    )
+)
+{
+
+    document.getElementById(
+        "amount_" +
+        service.replace(/ /g,'_')
+    ).innerHTML =
+
+    `
+    <br>
+
+    <input
+        type="number"
+        name="bill_amount_${service}"
+        placeholder="Enter Bill Amount"
+        style="width:200px;">
+    `;
+}
+
+    dropdown.remove(
+        dropdown.selectedIndex
+    );
+
+    dropdown.selectedIndex = 0;
+}
+
+</script>
+
+</body>
+</html>

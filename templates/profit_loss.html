@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profit & Loss Statement</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f4f4f4;
+        }
+        .header {
+            background: #0d6efd;
+            color: white;
+            padding: 25px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .card-box {
+            background: white;
+            padding: 25px;
+            margin-top: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,.1);
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .collection-card { border-top: 5px solid #0d6efd; }
+        .expense-card { border-top: 5px solid #dc3545; }
+        .profit-card { border-left: 5px solid #198754; background: #f8fff9; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    Daily Profit & Loss Report
+</div>
+
+<div class="container">
+    <div class="card-box">
+        
+        <form method="GET" action="/profit_loss" class="row g-3 mb-4 justify-content-center align-items-end">
+            <div class="col-md-6">
+                <label class="form-label font-weight-bold">Select Date</label>
+                <input type="date" name="selected_date" class="form-control" value="{{ selected_date }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">Check Report</button>
+            </div>
+        </form>
+
+        <h5 class="text-secondary mb-3 text-uppercase" style="font-size: 14px; letter-spacing: 0.5px;">Financial Overview Statement</h5>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="stat-card collection-card">
+                    <span class="text-secondary d-block mb-2" style="font-size: 14px; font-weight: 600;">TOTAL GROSS COLLECTION</span>
+                    <h2 class="text-primary font-weight-bold">₹ {{ collection }}</h2>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card expense-card">
+                    <span class="text-secondary d-block mb-2" style="font-size: 14px; font-weight: 600;">TOTAL OPERATING EXPENSES</span>
+                    <h2 class="text-danger font-weight-bold">₹ {{ expenses }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card profit-card d-flex justify-content-between align-items-center px-4 py-3 mt-2">
+            <h4 class="mb-0" style="font-size: 18px; font-weight: bold; color: #212529;">Net Operating Income / Profit:</h4>
+            <h2 class="mb-0 text-success font-weight-bold">₹ {{ profit }}</h2>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/dashboard" class="btn btn-secondary px-4">Back</a>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Service</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .header {
+            background: #0066cc;
+            color: white;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Form Card Container Layout */
+        .form-container {
+            max-width: 750px;
+            margin: 40px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .form-section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #f4f7f6;
+            padding-bottom: 8px;
+        }
+
+        .form-label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            font-size: 16px;
+            padding: 12px 15px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 0.25rem rgba(0, 102, 204, 0.15);
+        }
+
+        /* Custom Styling for Radio Options Selection Block */
+        .radio-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .form-check-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .form-check-input {
+            cursor: pointer;
+        }
+
+        .form-check-input:checked {
+            background-color: #0066cc;
+            border-color: #0066cc;
+        }
+
+        /* Slab Matrix Table Section Layout */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th {
+            background: #0066cc;
+            color: white;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        table td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .slab-table-input {
+            font-size: 15px !important;
+            padding: 8px 12px !important;
+            border: 1px solid #ced4da !important;
+        }
+
+        /* Action Controls Buttons Styling */
+        .btn-custom {
+            font-size: 16px;
+            padding: 12px 30px;
+            font-weight: bold;
+            border-radius: 6px;
+        }
+
+        .btn-save {
+            background: #28a745;
+            color: white;
+            border: none;
+        }
+
+        .btn-save:hover {
+            background: #218838;
+            color: white;
+        }
+
+        .btn-add-range {
+            background: #0066cc;
+            color: white;
+            font-weight: bold;
+            padding: 8px 16px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-add-range:hover {
+            background: #0052a3;
+        }
+
+        .btn-back {
+            background: #6c757d;
+            color: white;
+            border: none;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>Add New Service</h2>
+</div>
+
+<div class="form-container">
+    <form method="POST">
+        
+        <div class="form-section-title">Service Details Configuration</div>
+        
+        <div class="mb-4">
+            <label class="form-label">Service Name</label>
+            <input 
+                type="text" 
+                name="service_name" 
+                class="form-control" 
+                placeholder="e.g. Passport Seva, Photostat, Print Out" 
+                required>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label">Service Charge Model Type</label>
+            <div class="radio-group d-flex flex-wrap gap-4">
+                <div class="form-check">
+                    <input 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="service_type" 
+                        id="typeFixed" 
+                        value="FIXED" 
+                        checked 
+                        onclick="toggleType()">
+                    <label class="form-check-label" for="typeFixed">
+                        Fixed Charge
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="service_type" 
+                        id="typeVariable" 
+                        value="VARIABLE" 
+                        onclick="toggleType()">
+                    <label class="form-check-label" for="typeVariable">
+                        Variable (Dynamic Slab)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input 
+                        class="form-check-input" 
+                        type="radio" 
+                        name="service_type" 
+                        id="typeQuantity" 
+                        value="QUANTITY" 
+                        onclick="toggleType()">
+                    <label class="form-check-label" for="typeQuantity">
+                        Quantity Based (Page Count)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4" id="charge_field">
+            <label id="charge_label" class="form-label">Fixed Base Charge (₹)</label>
+            <input 
+                type="number" 
+                step="0.01" 
+                name="charge" 
+                class="form-control" 
+                placeholder="Enter amount">
+        </div>
+
+        <div id="slab_section" style="display:none;" class="mb-4 pt-2">
+            <div style="font-size: 18px; font-weight: bold; color: #212529;" class="mb-2">Configure Range Slabs</div>
+            <div class="table-responsive">
+                <table id="slab_table" class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>From Amount (₹)</th>
+                            <th>To Amount (₹)</th>
+                            <th>Service Charge (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <input type="number" step="0.01" name="from_amount[]" class="form-control slab-table-input" placeholder="From">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" name="to_amount[]" class="form-control slab-table-input" placeholder="To">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" name="service_charge[]" class="form-control slab-table-input" placeholder="Charge">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn-add-range mt-2" onclick="addRow()">+ Add Range</button>
+        </div>
+
+        <div class="d-flex gap-3 border-top pt-4 mt-4">
+            <button type="submit" class="btn btn-custom btn-save">Save Service</button>
+            <a href="/service_management" class="btn btn-custom btn-back d-flex align-items-center">Back</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleType() {
+    let serviceType = document.querySelector('input[name="service_type"]:checked').value;
+    
+    let chargeField = document.getElementById("charge_field");
+    let chargeLabel = document.getElementById("charge_label");
+    let slabSection = document.getElementById("slab_section");
+
+    if (serviceType === "VARIABLE") {
+        chargeField.style.display = "none";
+        slabSection.style.display = "block";
+    } else if (serviceType === "QUANTITY") {
+        chargeField.style.display = "block";
+        slabSection.style.display = "none";
+        chargeLabel.innerText = "Service Charge Per Page (₹)";
+    } else {
+        chargeField.style.display = "block";
+        slabSection.style.display = "none";
+        chargeLabel.innerText = "Fixed Base Charge (₹)";
+    }
+}
+
+function addRow() {
+    let table = document.getElementById("slab_table").getElementsByTagName('tbody')[0];
+    if(!table) {
+        table = document.getElementById("slab_table");
+    }
+    
+    let row = table.insertRow(-1);
+    row.innerHTML = `
+        <td>
+            <input type="number" step="0.01" name="from_amount[]" class="form-control slab-table-input" placeholder="From">
+        </td>
+        <td>
+            <input type="number" step="0.01" name="to_amount[]" class="form-control slab-table-input" placeholder="To">
+        </td>
+        <td>
+            <input type="number" step="0.01" name="service_charge[]" class="form-control slab-table-input" placeholder="Charge">
+        </td>
+    `;
+}
+
+window.onload = function() {
+    toggleType();
+};
+</script>
+
+</body>
+</html>

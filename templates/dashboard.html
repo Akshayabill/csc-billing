@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Akshaya Billing ERP - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            margin: 0;
+        }
+
+        .header {
+            background: #0066cc;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .section-group-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            margin-top: 25px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 8px;
+        }
+
+        /* Premium Dashboard Grid Cards Styling */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 10px;
+            padding: 22px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            font-size: 19px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border-bottom: 4px solid #ced4da;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 110px;
+        }
+
+        /* Smooth Floating and Border Animation on Hover */
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            color: #0066cc;
+        }
+
+        /* Distinct Color Identifiers based on Action contexts */
+        .card-billing { border-bottom-color: #28a745; }
+        .card-billing:hover { border-bottom-color: #218838; }
+
+        .card-reports { border-bottom-color: #0066cc; }
+        .card-reports:hover { border-bottom-color: #0052a3; }
+
+        .card-finance { border-bottom-color: #fd7e14; }
+        .card-finance:hover { border-bottom-color: #e06d0f; }
+
+        .card-management { border-bottom-color: #6f42c1; }
+        .card-management:hover { border-bottom-color: #59339e; }
+
+        .card-logout { border-bottom-color: #dc3545; color: #dc3545; }
+        .card-logout:hover { border-bottom-color: #bd2130; color: #bd2130; background-color: #fff5f5; }
+
+        /* Secondary descriptive subtitle text */
+        .card-subtitle {
+            font-size: 13px;
+            font-weight: normal;
+            color: #6c757d;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Akshaya Billing ERP Dashboard</h1>
+</div>
+
+<div class="main-container container">
+    
+    <div class="section-group-title">Operations & Invoicing</div>
+    <div class="dashboard-grid">
+        <a href="/new_bill" class="menu-card card-billing">
+            <span>New Bill Entry</span>
+            <span class="card-subtitle">Generate new invoices</span>
+        </a>
+        <a href="/reports" class="menu-card card-billing">
+            <span>All Bill Reports</span>
+            <span class="card-subtitle">View and look up saved invoices</span>
+        </a>
+    </div>
+
+    <div class="section-group-title">Collection & Performance Analytics</div>
+    <div class="dashboard-grid">
+        <a href="/collection_report" class="menu-card card-reports">
+            <span>Collection Report</span>
+            <span class="card-subtitle">Daily counter summaries</span>
+        </a>
+        <a href="/date_report" class="menu-card card-reports">
+            <span>Date Wise Report</span>
+            <span class="card-subtitle">Filter collection statements by date</span>
+        </a>
+        <a href="/service_report" class="menu-card card-reports">
+            <span>Service Wise Report</span>
+            <span class="card-subtitle">Service analytics and counts</span>
+        </a>
+        <a href="/staff_report" class="menu-card card-reports">
+            <span>Staff Wise Report</span>
+            <span class="card-subtitle">Track staff ledger sales</span>
+        </a>
+    </div>
+
+    <div class="section-group-title">Accounting Ledger & Statements</div>
+    <div class="dashboard-grid">
+        <a href="/expense" class="menu-card card-finance">
+            <span>Expense Entry</span>
+            <span class="card-subtitle">Log operating costs & cash outs</span>
+        </a>
+        <a href="/balance_sheet" class="menu-card card-finance">
+            <span>Balance Sheet</span>
+            <span class="card-subtitle">Statement summaries log</span>
+        </a>
+        <a href="/profit_loss" class="menu-card card-finance">
+            <span>Profit / Loss Report</span>
+            <span class="card-subtitle">Net operating margin statement</span>
+        </a>
+    </div>
+
+    <div class="section-group-title">System Settings & Controls</div>
+    <div class="dashboard-grid">
+        <a href="/service_management" class="menu-card card-management">
+            <span>Service Management</span>
+            <span class="card-subtitle">Add or configure base prices & slabs</span>
+        </a>
+        <a href="/users" class="menu-card card-management">
+            <span>User Management</span>
+            <span class="card-subtitle">Manage system staff access levels</span>
+        </a>
+        <a href="/logout" class="menu-card card-logout">
+            <span>System Logout</span>
+            <span class="card-subtitle">End session safely</span>
+        </a>
+    </div>
+
+</div>
+
+</body>
+</html>

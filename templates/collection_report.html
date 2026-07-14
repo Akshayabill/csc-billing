@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collection Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f6;
+            margin: 0;
+        }
+
+        .header {
+            background: #0066cc;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Professional Date Search Card Styling */
+        .search-container {
+            max-width: 550px;
+            margin: 35px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .search-box-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .custom-date-input {
+            font-size: 18px;
+            padding: 12px;
+            border: 2px solid #ced4da;
+            border-radius: 6px 0 0 6px !important;
+            transition: all 0.3s ease;
+        }
+
+        .custom-date-input:focus {
+            border-color: #0066cc;
+            box-shadow: 0 0 0 0.25rem rgba(0, 102, 204, 0.15);
+        }
+
+        .custom-search-btn {
+            background: #0066cc;
+            color: white;
+            font-weight: bold;
+            padding: 0 30px;
+            font-size: 18px;
+            border-radius: 0 6px 6px 0 !important;
+            border: none;
+            transition: background 0.2s ease;
+        }
+
+        .custom-search-btn:hover {
+            background: #0052a3;
+            color: white;
+        }
+
+        /* Dashboard Summary Cards Grid Styling */
+        .report-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-title {
+            font-size: 16px;
+            color: #6c757d;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .btn-back {
+            display: block;
+            width: 150px;
+            margin: 40px auto;
+            text-align: center;
+            background: #6c757d;
+            color: white;
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-back:hover {
+            background: #5a6268;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Collection Report</h1>
+</div>
+
+<div class="search-container">
+    <div class="search-box-title">Select Report Date</div>
+    <form method="GET">
+        <div class="input-group">
+            <input
+                type="date"
+                name="date"
+                class="form-control custom-date-input"
+                value="{{ selected_date }}">
+            <button type="submit" class="btn custom-search-btn">
+                View Report
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="report-grid">
+    <div class="dashboard-card" style="border-top: 4px solid #0066cc;">
+        <div class="card-title">Total Collection</div>
+        <div class="card-value" style="color: #0066cc;">₹ {{ total_collection }}</div>
+    </div>
+
+    <div class="dashboard-card" style="border-top: 4px solid #6f42c1;">
+        <div class="card-title">Total Bills</div>
+        <div class="card-value" style="color: #6f42c1;">{{ bill_count }}</div>
+    </div>
+
+    <div class="dashboard-card" style="border-top: 4px solid #28a745;">
+        <div class="card-title">Cash Collection</div>
+        <div class="card-value" style="color: #28a745;">₹ {{ cash_total }}</div>
+    </div>
+
+    <div class="dashboard-card" style="border-top: 4px solid #fd7e14;">
+        <div class="card-title">UPI Collection</div>
+        <div class="card-value" style="color: #fd7e14;">₹ {{ upi_total }}</div>
+    </div>
+</div>
+
+<a href="/dashboard" class="btn-back">
+    Back
+</a>
+
+</body>
+</html>
