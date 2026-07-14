@@ -76,7 +76,7 @@ def init_db():
     )
     """)
 
-    # ടേബിൾ ഫ്രഷ് ആയി ക്രിയേറ്റ് ചെയ്യാൻ
+    # Fresh setup for dynamic permissions row mappings
     cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
 
     cursor.execute('''
@@ -165,24 +165,23 @@ def add_user():
         password = request.form.get("password")
         role = request.form.get("role").upper()
         
-        is_full = request.form.get("is_full_access") == "true" or role == "ADMIN"
-        can_rep = request.form.get("can_view_reports") == "true" or is_full
-        can_srv = request.form.get("can_manage_services") == "true" or is_full
-        can_exp = request.form.get("can_manage_expenses") == "true" or is_full
+        # Mapping selected features dropdown parameters directly dynamically
+        selected_features = request.form.getlist("features[]")
+        
+        is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
+        can_rep = "REPORTS" in selected_features or is_full
+        can_srv = "SERVICES" in selected_features or is_full
+        can_exp = "EXPENSES" in selected_features or is_full
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        try:
-            cursor.execute("""
-                INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
-            """, (username, password, role, can_rep, can_srv, can_exp, is_full))
-            conn.commit()
-        except Exception as e:
-            print(e)
-        finally:
-            cursor.close()
-            release_db_connection(conn)
+        cursor.execute("""
+            INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (username, password, role, can_rep, can_srv, can_exp, is_full))
+        conn.commit()
+        cursor.close()
+        release_db_connection(conn)
         return redirect("/users")
 
     return render_template("add_user.html")
@@ -200,10 +199,12 @@ def edit_user(id):
         password = request.form.get("password")
         role = request.form.get("role").upper()
         
-        is_full = request.form.get("is_full_access") == "true" or role == "ADMIN"
-        can_rep = request.form.get("can_view_reports") == "true" or is_full
-        can_srv = request.form.get("can_manage_services") == "true" or is_full
-        can_exp = request.form.get("can_manage_expenses") == "true" or is_full
+        selected_features = request.form.getlist("features[]")
+        
+        is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
+        can_rep = "REPORTS" in selected_features or is_full
+        can_srv = "SERVICES" in selected_features or is_full
+        can_exp = "EXPENSES" in selected_features or is_full
 
         cursor.execute("""
             UPDATE users SET username=%s, password=%s, role=%s, can_view_reports=%s, can_manage_services=%s, can_manage_expenses=%s, is_full_access=%s 
