@@ -8,7 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "csc_secret"
 
-# PostgreSQL Database Connection URL Provided by Render
+# PUT YOUR NEW DATABASE URL HERE
 DATABASE_URL = "postgresql://admin:Trk21hUADLdVDqN32vGC4MSXmkx2Uu0W@dpg-d8v0gb1kh4rs73d49s6g-a.oregon-postgres.render.com/akshayadb"
 
 # DATABASE CONNECTION POOL SETTINGS
@@ -24,7 +24,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Service slabs table for variable charge ranges
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS service_slabs (
         id SERIAL PRIMARY KEY,
@@ -35,7 +34,6 @@ def init_db():
     )
     """)
 
-    # Bills Master table to track main invoice details
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bills (
         id SERIAL PRIMARY KEY,
@@ -51,7 +49,6 @@ def init_db():
     )
     """)
 
-    # Bill Items table to track breakdown of individual services inside a bill
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS bill_items (
         id SERIAL PRIMARY KEY,
@@ -64,7 +61,6 @@ def init_db():
     )
     """)
 
-    # Services master table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS services (
         id SERIAL PRIMARY KEY,
@@ -74,7 +70,6 @@ def init_db():
     )
     """)
 
-    # Expenses table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS expenses (
         id SERIAL PRIMARY KEY,
@@ -84,7 +79,6 @@ def init_db():
     )
     """)
 
-    # Users table for staff and admin login
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -94,7 +88,6 @@ def init_db():
     )
     """)
 
-    # Insert default admin user if not exists
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
         cursor.execute("""
@@ -105,7 +98,6 @@ def init_db():
     cursor.close()
     release_db_connection(conn)
 
-# Initialize database components on startup
 init_db()
 
 
