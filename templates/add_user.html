@@ -28,14 +28,6 @@ body{
     border-radius:10px;
     box-shadow:0 0 10px rgba(0,0,0,.1);
 }
-
-.perm-box {
-    margin-top: 20px; 
-    background: #f8f9fa; 
-    padding: 20px; 
-    border-radius: 8px; 
-    border: 1px solid #dee2e6;
-}
 </style>
 
 </head>
@@ -63,36 +55,23 @@ body{
 </div>
 
 <div class="mb-3">
-    <label class="form-label"><b>Role</b></label>
+    <label class="form-label"><b>System Role</b></label>
     <select name="role" id="user_role" class="form-select" onchange="checkRole()">
         <option value="ADMIN">ADMIN</option>
         <option value="STAFF" selected>STAFF</option>
     </select>
 </div>
 
-<!-- Staff Permission Section -->
-<div class="perm-box" id="permission_section">
-    <h5 style="margin-top: 0; color: #0066cc; font-weight: bold; border-bottom: 2px solid #ddd; padding-bottom: 8px;">
-        Staff Permissions Control
-    </h5>
+<div class="mb-3" id="feature_section">
+    <label class="form-label"><b>Select Permitted Dashboard Features</b></label>
+    <p class="text-muted" style="font-size: 12px; margin-top:-5px;">Ctrl കീ അമർത്തിപ്പിടിച്ച് ഒന്നിൽ കൂടുതൽ ഫീച്ചറുകൾ ഒരുമിച്ച് സെലക്ട് ചെയ്യാം (Or cmd key on Mac)</p>
     
-    <label style="display: block; margin-bottom: 12px; cursor: pointer;">
-        <input type="checkbox" name="is_full_access" value="true" onchange="toggleAllPerms(this)"> 
-        <span style="color: #dc3545; font-weight: bold;">Full Access (എല്ലാ പെർമിഷനും നൽകുക)</span>
-    </label>
-    <hr style="margin: 10px 0;">
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_view_reports" value="true"> View Reports (റിപ്പോർട്ടുകൾ കാണാം)
-    </label>
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_manage_services" value="true"> Manage Services (സർവീസുകൾ മാറ്റാം)
-    </label>
-    
-    <label style="display: block; margin-bottom: 8px; cursor: pointer;">
-        <input type="checkbox" class="perm-check" name="can_manage_expenses" value="true"> Track Expenses (ചിലവുകൾ നിയന്ത്രിക്കാം)
-    </label>
+    <select name="features[]" class="form-select" multiple style="height: 120px;">
+        <option value="FULL_ACCESS" style="color: #dc3545; font-weight: bold;">[ Full Access / Manager ]</option>
+        <option value="REPORTS">Reports (റിപ്പോർട്ടുകൾ കാണാൻ)</option>
+        <option value="SERVICES">Service Management (സർവീസുകൾ മാറ്റാൻ)</option>
+        <option value="EXPENSES">Expense Management (ചിലവുകൾ കൂട്ടാൻ)</option>
+    </select>
 </div>
 
 <div class="mt-4">
@@ -112,19 +91,11 @@ function togglePassword() {
 
 function checkRole() {
     let role = document.getElementById("user_role").value;
-    let permSection = document.getElementById("permission_section");
+    let featSection = document.getElementById("feature_section");
     if(role === "ADMIN") {
-        permSection.style.display = "none";
+        featSection.style.display = "none";
     } else {
-        permSection.style.display = "block";
-    }
-}
-
-function toggleAllPerms(master) {
-    let checkboxes = document.getElementsByClassName('perm-check');
-    for (let i = 0; i < checkboxes.length; i++) {
-        checkboxes[i].checked = master.checked;
-        checkboxes[i].disabled = master.checked;
+        featSection.style.display = "block";
     }
 }
 </script>
