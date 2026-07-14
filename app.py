@@ -2,7 +2,7 @@ import os
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import DictCursor
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, abort
 from datetime import datetime
 
 app = Flask(__name__)
@@ -95,14 +95,34 @@ def init_db():
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
         cursor.execute("""
-        INSERT INTO users (username, password, role) VALUES (%s,%s,%s)
-        """, ("admin", "admin123", "ADMIN"))
+        INSERT INTO users (username, password, role, is_full_access) VALUES (%s,%s,%s,%s)
+        """, ("admin", "admin123", "ADMIN", True))
 
     conn.commit()
     cursor.close()
     release_db_connection(conn)
 
 init_db()
+
+
+# Helper function to check staff specific permissions
+def has_permission(permission_name):
+    if "username" not in session:
+        return False
+    if session.get("role") == "ADMIN":
+        return True
+    
+    # If staff, check database for specific permission
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT is_full_access, {permission_name} FROM users WHERE username=%s", (session.get("username"),))
+    res = cursor.fetchone()
+    cursor.close()
+    release_db_connection(conn)
+    
+    if res:
+        return res[0] or res[1] # True if full access or has specific permission
+    return False
 
 
 @app.route("/", methods=["GET","POST"])
@@ -133,7 +153,8 @@ def users():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, username, role FROM users ORDER BY username")
+    # Fetching all columns including permissions for users.html table template layout
+    cursor.execute("SELECT id, username, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users ORDER BY username")
     users_list = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
@@ -149,10 +170,19 @@ def add_user():
         username = request.form.get("username")
         password = request.form.get("password")
         role = request.form.get("role")
+        
+        # Getting permission checkboxes values
+        is_full = request.form.get("is_full_access") == "true"
+        can_rep = request.form.get("can_view_reports") == "true" or is_full
+        can_srv = request.form.get("can_manage_services") == "true" or is_full
+        can_exp = request.form.get("can_manage_expenses") == "true" or is_full
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO users (username, password, role) VALUES (%s,%s,%s)", (username, password, role))
+        cursor.execute("""
+            INSERT INTO users (username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access) 
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (username, password, role, can_rep, can_srv, can_exp, is_full))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
@@ -161,8 +191,45 @@ def add_user():
     return render_template("add_user.html")
 
 
+@app.route("/edit_user/<int:id>", methods=["GET","POST"])
+def edit_user(id):
+    if session.get("role") != "ADMIN":
+        return redirect("/dashboard")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        role = request.form.get("role")
+        
+        is_full = request.form.get("is_full_access") == "true"
+        can_rep = request.form.get("can_view_reports") == "true" or is_full
+        can_srv = request.form.get("can_manage_services") == "true" or is_full
+        can_exp = request.form.get("can_manage_expenses") == "true" or is_full
+
+        cursor.execute("""
+            UPDATE users SET username=%s, password=%s, role=%s, can_view_reports=%s, can_manage_services=%s, can_manage_expenses=%s, is_full_access=%s 
+            WHERE id=%s
+        """, (username, password, role, can_rep, can_srv, can_exp, is_full, id))
+        conn.commit()
+        cursor.close()
+        release_db_connection(conn)
+        return redirect("/users")
+
+    cursor.execute("SELECT id, username, password, role, can_view_reports, can_manage_services, can_manage_expenses, is_full_access FROM users WHERE id=%s", (id,))
+    user = cursor.fetchone()
+    cursor.close()
+    release_db_connection(conn)
+    return render_template("edit_user.html", user=user)
+
+
 @app.route("/new_bill", methods=["GET", "POST"])
 def new_bill():
+    if "username" not in session:
+        return redirect("/")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -249,6 +316,9 @@ def new_bill():
 
 @app.route("/reports")
 def reports():
+    if not has_permission("can_view_reports"):
+        return redirect("/dashboard")
+
     conn = get_db_connection()
     cursor = conn.cursor()
     search = request.args.get("search")
@@ -301,6 +371,9 @@ def reports():
 
 @app.route("/bill/<int:bill_id>")
 def bill_view(bill_id):
+    if "username" not in session:
+        return redirect("/")
+
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
@@ -332,7 +405,7 @@ def bill_view(bill_id):
 
 @app.route("/balance_sheet")
 def balance_sheet():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_view_reports"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -349,14 +422,14 @@ def balance_sheet():
 
 @app.route("/staff_report", methods=["GET"])
 def staff_report():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_view_reports"):
         return redirect("/dashboard")
 
     from_date = request.args.get("from_date")
     to_date = request.args.get("to_date")
 
     if not from_date:
-        from_date = datetime.now().strftime("%Y-%m-%01")
+        from_date = datetime.now().strftime("%Y-%m-01")
     if not to_date:
         to_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -388,14 +461,14 @@ def staff_report():
 
 @app.route("/service_report", methods=["GET"])
 def service_report():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_view_reports"):
         return redirect("/dashboard")
 
     from_date = request.args.get("from_date")
     to_date = request.args.get("to_date")
 
     if not from_date:
-        from_date = datetime.now().strftime("%Y-%m-%01")
+        from_date = datetime.now().strftime("%Y-%m-01")
     if not to_date:
         to_date = datetime.now().strftime("%Y-%m-%d")
 
@@ -429,7 +502,7 @@ def service_report():
 
 @app.route("/date_report", methods=["GET", "POST"])
 def date_report():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_view_reports"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -453,7 +526,7 @@ def date_report():
 
 @app.route("/expense", methods=["GET","POST"])
 def expense():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_manage_expenses"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -479,7 +552,7 @@ def expense():
 
 @app.route("/edit_expense/<int:id>", methods=["GET","POST"])
 def edit_expense(id):
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_manage_expenses"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -506,7 +579,7 @@ def edit_expense(id):
 
 @app.route("/delete_expense/<int:id>")
 def delete_expense(id):
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_manage_expenses"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -520,7 +593,7 @@ def delete_expense(id):
 
 @app.route("/profit_loss", methods=["GET"])
 def profit_loss():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_view_reports"):
         return redirect("/dashboard")
 
     selected_date = request.args.get("selected_date")
@@ -555,6 +628,9 @@ def profit_loss():
 
 @app.route("/delete_bill/<int:bill_id>")
 def delete_bill(bill_id):
+    if session.get("role") != "ADMIN":
+        return redirect("/dashboard")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM bill_items WHERE bill_id=%s", (bill_id,))
@@ -567,6 +643,8 @@ def delete_bill(bill_id):
 
 @app.route("/check")
 def check():
+    if session.get("role") != "ADMIN":
+        return redirect("/dashboard")
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id, bill_no, customer_name FROM bills")
@@ -580,7 +658,13 @@ def check():
 def dashboard():
     if "username" not in session:
         return redirect("/")
-    return render_template("dashboard.html", role=session.get("role"))
+        
+    # Send permissions to frontend to show/hide menu sidebars
+    can_rep = has_permission("can_view_reports")
+    can_srv = has_permission("can_manage_services")
+    can_exp = has_permission("can_manage_expenses")
+    
+    return render_template("dashboard.html", role=session.get("role"), can_reports=can_rep, can_services=can_srv, can_expenses=can_exp)
 
 
 @app.route("/collection_report")
@@ -595,7 +679,8 @@ def collection_report():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if role == "STAFF":
+    # If user is just standard STAFF without full reports access, show only their own collection data
+    if role == "STAFF" and not has_permission("can_view_reports"):
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
         total_collection = cursor.fetchone()[0]
 
@@ -608,6 +693,7 @@ def collection_report():
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='UPI' AND bill_date=%s", (username, selected_date))
         upi_total = cursor.fetchone()[0]
     else:
+        # Admin or Staff with Report permissions can see overall collection
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE bill_date=%s", (selected_date,))
         total_collection = cursor.fetchone()[0]
 
@@ -627,7 +713,7 @@ def collection_report():
 
 @app.route("/service_management")
 def service_management():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_manage_services"):
         return redirect("/dashboard")
 
     conn = get_db_connection()
@@ -647,7 +733,7 @@ def logout():
 
 @app.route("/add_service", methods=["GET","POST"])
 def add_service():
-    if session.get("role") != "ADMIN":
+    if not has_permission("can_manage_services"):
         return redirect("/dashboard")
 
     if request.method == "POST":
@@ -684,6 +770,9 @@ def add_service():
 
 @app.route("/edit_service/<int:id>", methods=["GET","POST"])
 def edit_service(id):
+    if not has_permission("can_manage_services"):
+        return redirect("/dashboard")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -721,6 +810,9 @@ def edit_service(id):
 
 @app.route("/delete_service/<int:id>")
 def delete_service(id):
+    if not has_permission("can_manage_services"):
+        return redirect("/dashboard")
+        
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM services WHERE id=%s", (id,))
@@ -728,32 +820,6 @@ def delete_service(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/service_management")
-
-
-@app.route("/edit_user/<int:id>", methods=["GET","POST"])
-def edit_user(id):
-    if session.get("role") != "ADMIN":
-        return redirect("/dashboard")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        role = request.form.get("role")
-
-        cursor.execute("UPDATE users SET username=%s, password=%s, role=%s WHERE id=%s", (username, password, role, id))
-        conn.commit()
-        cursor.close()
-        release_db_connection(conn)
-        return redirect("/users")
-
-    cursor.execute("SELECT id, username, password, role FROM users WHERE id=%s", (id,))
-    user = cursor.fetchone()
-    cursor.close()
-    release_db_connection(conn)
-    return render_template("edit_user.html", user=user)
 
 
 @app.route("/delete_user/<int:id>")
