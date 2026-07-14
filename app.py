@@ -79,14 +79,18 @@ def init_db():
     )
     """)
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE,
-        password TEXT,
-        role TEXT
-    )
-    """)
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT DEFAULT 'staff',
+                can_view_reports BOOLEAN DEFAULT FALSE,
+                can_manage_services BOOLEAN DEFAULT FALSE,
+                can_manage_expenses BOOLEAN DEFAULT FALSE,
+                is_full_access BOOLEAN DEFAULT FALSE
+            )
+        ''')
 
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
