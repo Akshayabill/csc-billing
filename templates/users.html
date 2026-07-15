@@ -34,6 +34,7 @@
             border-radius: 4px;
             font-size: 12px;
             display: inline-block;
+            margin-bottom: 4px;
         }
     </style>
 
@@ -76,14 +77,21 @@
                     {% if user[3] == 'ADMIN' %}
                         <span class="badge bg-success">All Access (System Admin)</span>
                     {% else %}
-                        {% if user[7] %}
+                        {% if user[13] %}
                             <span class="badge bg-danger">Full Access</span>
                         {% else %}
-                            {% if user[4] %}<span class="badge-perm">Reports</span>{% endif %}
-                            {% if user[5] %}<span class="badge-perm">Services</span>{% endif %}
-                            {% if user[6] %}<span class="badge-perm">Expenses</span>{% endif %}
-                            {% if not user[4] and not user[5] and not user[6] %}
-                                <span class="text-muted" style="font-size: 13px;">Billing Only</span>
+                            {% if user[4] %}<span class="badge-perm">New Bill</span>{% endif %}
+                            {% if user[5] %}<span class="badge-perm">All Bills</span>{% endif %}
+                            {% if user[6] %}<span class="badge-perm">Collection Rep</span>{% endif %}
+                            {% if user[7] %}<span class="badge-perm">Date Rep</span>{% endif %}
+                            {% if user[8] %}<span class="badge-perm">Staff Rep</span>{% endif %}
+                            {% if user[9] %}<span class="badge-perm">Service Rep</span>{% endif %}
+                            {% if user[10] %}<span class="badge-perm">Expense</span>{% endif %}
+                            {% if user[11] %}<span class="badge-perm">Profit/Loss</span>{% endif %}
+                            {% if user[12] %}<span class="badge-perm">Services Mgmt</span>{% endif %}
+                            
+                            {% if not user[4] and not user[5] and not user[6] and not user[7] and not user[8] and not user[9] and not user[10] and not user[11] and not user[12] %}
+                                <span class="text-muted" style="font-size: 13px;">No Dashboard Access</span>
                             {% endif %}
                         {% endif %}
                     {% endif %}
