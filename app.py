@@ -12,11 +12,9 @@ DATABASE_URL = "postgresql://postgres.srtqnjzrgmrqvorhshaq:Kondazhy106@aws-1-ap-
 db_pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
 
 def get_db_connection():
-    return db_pool.getconn()
-
+    return psycopg2.connect(DATABASE_URL)
 def release_db_connection(conn):
-    db_pool.putconn(conn)
-
+    conn.close()
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
