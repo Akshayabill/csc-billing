@@ -67,20 +67,8 @@ def init_db():
     )
     """)
 
-    # ആദ്യം പഴയ ടേബിളുകൾ പൂർണ്ണമായി ഡിലീറ്റ് ചെയ്യുന്നു (Drop)
     cursor.execute("DROP TABLE IF EXISTS expenses CASCADE;")
     cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
-
-    # അതിനുശേഷം പുതിയ കോളങ്ങളോടെ ടേബിളുകൾ ഫ്രഷ് ആയി ക്രിയേറ്റ് ചെയ്യുന്നു (Create)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS expenses (
-        id SERIAL PRIMARY KEY,
-        expense_date TEXT,
-        expense_name TEXT,
-        amount REAL,
-        staff_name TEXT DEFAULT 'admin'
-    )
-    """)
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -101,6 +89,16 @@ def init_db():
         )
     ''')
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id SERIAL PRIMARY KEY,
+        expense_date TEXT,
+        expense_name TEXT,
+        amount REAL,
+        staff_name TEXT DEFAULT 'admin'
+    )
+    """)
+
     cursor.execute("SELECT * FROM users WHERE role = 'ADMIN'")
     if not cursor.fetchone():
         cursor.execute("""
@@ -111,6 +109,7 @@ def init_db():
     conn.commit()
     cursor.close()
     release_db_connection(conn)
+
 init_db()
 
 def has_permission(permission_name):
@@ -143,7 +142,6 @@ def is_manager_or_admin():
     cursor.close()
     release_db_connection(conn)
     return res[0] if res else False
-
 
 @app.route("/", methods=["GET","POST"])
 def login():
@@ -361,7 +359,6 @@ def reports():
     offset = (page - 1) * limit
     username = session.get("username")
 
-    # ചെക്കിങ്: അഡ്മിനോ മാനേജരോ ആണോ എന്ന് നോക്കുന്നു
     if is_manager_or_admin():
         if search:
             cursor.execute("SELECT COUNT(*) FROM bills WHERE bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s", (f"%{search}%", f"%{search}%", f"%{search}%"))
@@ -372,7 +369,6 @@ def reports():
             total_records = cursor.fetchone()[0]
             cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
     else:
-        # സാധാരണ സ്റ്റാഫ് ആണെങ്കിൽ അവരുടെ ബില്ലുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
         if search:
             cursor.execute("SELECT COUNT(*) FROM bills WHERE staff_name=%s AND (bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s)", (username, f"%{search}%", f"%{search}%", f"%{search}%"))
             total_records = cursor.fetchone()[0]
@@ -400,7 +396,6 @@ def bill_view(bill_id):
     cursor.execute("SELECT * FROM bills WHERE id=%s", (bill_id,))
     bill = cursor.fetchone()
 
-    # സുരക്ഷാ ചെക്ക്: സ്വന്തം ബില്ലല്ലെങ്കിൽ കാണാൻ അനുവദിക്കില്ല (അഡ്മിൻ/മാനേജർക്ക് കാണാം)
     if bill and bill['staff_name'] != session.get("username") and not is_manager_or_admin():
         cursor.close()
         release_db_connection(conn)
@@ -453,7 +448,6 @@ def staff_report():
     cursor = conn.cursor()
 
     if is_manager_or_admin():
-        # ഇവിടെ COALESCE(SUM(total_amount), 0) എന്നതിന് ശേഷം 'as total_collection' എന്ന് കൃത്യമായി ചേർത്തിട്ടുണ്ട്
         cursor.execute("""
             SELECT 
                 staff_name, 
@@ -567,7 +561,6 @@ def edit_expense(id):
     cursor = conn.cursor()
     username = session.get("username")
 
-    # സെക്യൂരിറ്റി ചെക്ക്
     cursor.execute("SELECT staff_name FROM expenses WHERE id=%s", (id,))
     exp_owner = cursor.fetchone()
     if exp_owner and exp_owner[0] != username and not is_manager_or_admin():
@@ -703,6 +696,7 @@ def collection_report():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    staff_balances = []
 
     if role == "STAFF" and not is_manager_or_admin():
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
@@ -713,6 +707,9 @@ def collection_report():
         cash_total = cursor.fetchone()[0]
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='UPI' AND bill_date=%s", (username, selected_date))
         upi_total = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE staff_name=%s AND expense_date=%s", (username, selected_date))
+        day_expenses = cursor.fetchone()[0]
+        cash_in_hand = cash_total - day_expenses
     else:
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE bill_date=%s", (selected_date,))
         total_collection = cursor.fetchone()[0]
@@ -722,10 +719,27 @@ def collection_report():
         cash_total = cursor.fetchone()[0]
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE payment_method='UPI' AND bill_date=%s", (selected_date,))
         upi_total = cursor.fetchone()[0]
+        cursor.execute("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date=%s", (selected_date,))
+        day_expenses = cursor.fetchone()[0]
+        cash_in_hand = cash_total - day_expenses
+
+        # Dynamic breakdown extraction for Admin/Manager
+        cursor.execute("SELECT DISTINCT username FROM users WHERE role='STAFF'")
+        all_staffs = cursor.fetchall()
+        for s in all_staffs:
+            s_name = s[0]
+            cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='Cash' AND bill_date=%s", (s_name, selected_date))
+            s_cash = cursor.fetchone()[0]
+            cursor.execute("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE staff_name=%s AND expense_date=%s", (s_name, selected_date))
+            s_exp = cursor.fetchone()[0]
+            s_balance = s_cash - s_exp
+            
+            if s_cash > 0 or s_exp > 0:
+                staff_balances.append({'name': s_name, 'cash_in': s_cash, 'expense': s_exp, 'balance': s_balance})
 
     cursor.close()
     release_db_connection(conn)
-    return render_template("collection_report.html", role=role, selected_date=selected_date, total_collection=total_collection, bill_count=bill_count, cash_total=cash_total, upi_total=upi_total)
+    return render_template("collection_report.html", role=role, selected_date=selected_date, total_collection=total_collection, bill_count=bill_count, cash_total=cash_total, upi_total=upi_total, day_expenses=day_expenses, cash_in_hand=cash_in_hand, staff_balances=staff_balances)
 
 @app.route("/service_management")
 def service_management():
