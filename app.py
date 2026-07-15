@@ -453,9 +453,27 @@ def staff_report():
     cursor = conn.cursor()
 
     if is_manager_or_admin():
-        cursor.execute("SELECT staff_name, COUNT(id), COALESCE(SUM(total_amount), 0) FROM bills WHERE bill_date BETWEEN %s AND %s GROUP BY staff_name ORDER BY total_collection DESC", (from_date, to_date))
+        # ഇവിടെ COALESCE(SUM(total_amount), 0) എന്നതിന് ശേഷം 'as total_collection' എന്ന് കൃത്യമായി ചേർത്തിട്ടുണ്ട്
+        cursor.execute("""
+            SELECT 
+                staff_name, 
+                COUNT(id) as total_bills, 
+                COALESCE(SUM(total_amount), 0) as total_collection
+            FROM bills
+            WHERE bill_date BETWEEN %s AND %s
+            GROUP BY staff_name
+            ORDER BY total_collection DESC
+        """, (from_date, to_date))
     else:
-        cursor.execute("SELECT staff_name, COUNT(id), COALESCE(SUM(total_amount), 0) FROM bills WHERE staff_name=%s AND bill_date BETWEEN %s AND %s GROUP BY staff_name", (username, from_date, to_date))
+        cursor.execute("""
+            SELECT 
+                staff_name, 
+                COUNT(id) as total_bills, 
+                COALESCE(SUM(total_amount), 0) as total_collection
+            FROM bills
+            WHERE staff_name=%s AND bill_date BETWEEN %s AND %s
+            GROUP BY staff_name
+        """, (username, from_date, to_date))
     
     report_data = cursor.fetchall()
     cursor.close()
