@@ -30,7 +30,7 @@
         .company-header {
             text-align: center;
             margin: 10px auto 25px auto;
-            border-bottom: 2px dashed #ddd;
+            border-bottom: 2px dashed #000000;
             padding-bottom: 20px;
             width: 100%;
         }
@@ -51,25 +51,27 @@
             line-height: 1.2;
         }
 
+        /* Darker Colors for Clear Printing */
         .brand-details .tsr-code {
             font-size: 15px;
             font-weight: bold;
-            color: #333;
+            color: #000000;
             margin: 2px 0;
         }
 
         .brand-details .address-line {
-            font-size: 13px;
-            color: #555;
+            font-size: 14px;
+            color: #000000;
             margin: 2px 0;
-            font-weight: 500;
+            font-weight: bold;
         }
 
         .brand-details .contact-details {
             margin: 2px 0 0 0;
             line-height: 1.4;
             font-size: 13px; 
-            color: #666;
+            color: #000000;
+            font-weight: bold;
         }
 
         .info-row{
@@ -179,6 +181,7 @@
             .company-header {
                 margin: 0 auto 30px auto !important;
                 padding-bottom: 20px !important;
+                border-bottom: 2px dashed #000000 !important;
             }
 
             .brand-details h2 {
@@ -190,6 +193,7 @@
             .brand-details .contact-details {
                 color: #000000 !important;
                 font-size: 15px !important;
+                font-weight: bold !important;
             }
 
             .info-row {
@@ -199,6 +203,7 @@
 
             .info-row p {
                 margin: 8px 0 !important;
+                color: #000000 !important;
             }
 
             table {
@@ -213,6 +218,7 @@
             table td {
                 font-size: 16px !important;
                 padding: 14px 12px !important;
+                color: #000000 !important;
             }
 
             .total-box {
@@ -220,12 +226,15 @@
                 padding: 15px !important;
                 margin-top: 30px !important;
                 width: 250px !important;
+                color: #000000 !important;
+                border: 2px solid #000000 !important;
             }
 
             .notes-display-box {
                 margin-top: 30px !important;
                 padding: 15px !important;
                 font-size: 16px !important;
+                color: #000000 !important;
             }
 
             hr {
@@ -235,6 +244,7 @@
             h3 {
                 margin: 10px 0 !important;
                 font-size: 20px !important;
+                color: #000000 !important;
             }
         }
     </style>
@@ -249,10 +259,12 @@
 <div class="container">
 
     <div class="company-header">
+        <!-- CSC Logo -->
         <div style="margin-bottom: 12px;">
-            <img src="/static/logo.png" width="95" height="60" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;" alt="CSC Logo">
+            <img src="/static/logo.png" width="140" height="auto" style="-webkit-print-color-adjust: exact; print-color-adjust: exact;" alt="CSC Logo">
         </div>
 
+        <!-- Center aligned brand contents (Pure Black Text Elements) -->
         <div class="brand-details">
             <h2>E-SEVANA KENDRAM</h2>
             <div class="tsr-code">CSC ID : 374016860011</div>
@@ -300,10 +312,10 @@
 
     {% if bill[9] %}
     <div class="notes-display-box">
-        <div style="font-weight: bold; font-size: 14px; color: #495057; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">
+        <div style="font-weight: bold; font-size: 14px; color: #000000; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">
             Application Notes / Reference Details:
         </div>
-        <div style="font-size: 16px; color: #212529; white-space: pre-line; font-weight: 500; line-height: 1.5;">
+        <div style="font-size: 16px; color: #000000; white-space: pre-line; font-weight: 500; line-height: 1.5;">
             {{ bill[9] }}
         </div>
     </div>
