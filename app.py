@@ -72,11 +72,11 @@ def init_db():
         id SERIAL PRIMARY KEY,
         expense_date TEXT,
         expense_name TEXT,
-        amount REAL
+        amount REAL,
+        staff_name TEXT DEFAULT 'admin'
     )
     """)
 
-    # ടേബിൾ ഫ്രഷ് ആയി എല്ലാ മൈക്രോ പെർമിഷൻ കോളങ്ങളോടും കൂടി ക്രിയേറ്റ് ചെയ്യുന്നു
     cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
 
     cursor.execute('''
@@ -128,6 +128,21 @@ def has_permission(permission_name):
         return res[0] or res[1]
     return False
 
+def is_manager_or_admin():
+    if "username" not in session:
+        return False
+    if session.get("role") == "ADMIN":
+        return True
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT is_full_access FROM users WHERE username=%s", (session.get("username"),))
+    res = cursor.fetchone()
+    cursor.close()
+    release_db_connection(conn)
+    return res[0] if res else False
+
+
 @app.route("/", methods=["GET","POST"])
 def login():
     if request.method == "POST":
@@ -172,7 +187,6 @@ def add_user():
         role = request.form.get("role").upper()
         
         selected_features = request.form.getlist("features[]")
-        
         is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
         
         p_new_bill = "NEW_BILL" in selected_features or is_full
@@ -212,7 +226,6 @@ def edit_user(id):
         role = request.form.get("role").upper()
         
         selected_features = request.form.getlist("features[]")
-        
         is_full = "FULL_ACCESS" in selected_features or role == "ADMIN"
         
         p_new_bill = "NEW_BILL" in selected_features or is_full
@@ -344,43 +357,35 @@ def reports():
         
     limit = 20
     offset = (page - 1) * limit
+    username = session.get("username")
 
-    if search:
-        cursor.execute("""
-            SELECT COUNT(*) FROM bills 
-            WHERE bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%"))
-        total_records = cursor.fetchone()[0]
-
-        cursor.execute("""
-            SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount
-            FROM bills 
-            WHERE bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s
-            ORDER BY id DESC LIMIT %s OFFSET %s
-        """, (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
+    # ചെക്കിങ്: അഡ്മിനോ മാനേജരോ ആണോ എന്ന് നോക്കുന്നു
+    if is_manager_or_admin():
+        if search:
+            cursor.execute("SELECT COUNT(*) FROM bills WHERE bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s", (f"%{search}%", f"%{search}%", f"%{search}%"))
+            total_records = cursor.fetchone()[0]
+            cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills WHERE bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s ORDER BY id DESC LIMIT %s OFFSET %s", (f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
+        else:
+            cursor.execute("SELECT COUNT(*) FROM bills")
+            total_records = cursor.fetchone()[0]
+            cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills ORDER BY id DESC LIMIT %s OFFSET %s", (limit, offset))
     else:
-        cursor.execute("SELECT COUNT(*) FROM bills")
-        total_records = cursor.fetchone()[0]
-
-        cursor.execute("""
-            SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount 
-            FROM bills 
-            ORDER BY id DESC LIMIT %s OFFSET %s
-        """, (limit, offset))
+        # സാധാരണ സ്റ്റാഫ് ആണെങ്കിൽ അവരുടെ ബില്ലുകൾ മാത്രം ഫിൽട്ടർ ചെയ്യുന്നു
+        if search:
+            cursor.execute("SELECT COUNT(*) FROM bills WHERE staff_name=%s AND (bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s)", (username, f"%{search}%", f"%{search}%", f"%{search}%"))
+            total_records = cursor.fetchone()[0]
+            cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills WHERE staff_name=%s AND (bill_no LIKE %s OR customer_name LIKE %s OR mobile LIKE %s) ORDER BY id DESC LIMIT %s OFFSET %s", (username, f"%{search}%", f"%{search}%", f"%{search}%", limit, offset))
+        else:
+            cursor.execute("SELECT COUNT(*) FROM bills WHERE staff_name=%s", (username,))
+            total_records = cursor.fetchone()[0]
+            cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills WHERE staff_name=%s ORDER BY id DESC LIMIT %s OFFSET %s", (username, limit, offset))
 
     data = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
-
     total_pages = (total_records + limit - 1) // limit
 
-    return render_template(
-        "reports.html", 
-        data=data, 
-        current_page=page, 
-        total_pages=total_pages, 
-        search=search
-    )
+    return render_template("reports.html", data=data, current_page=page, total_pages=total_pages, search=search)
 
 @app.route("/bill/<int:bill_id>")
 def bill_view(bill_id):
@@ -393,24 +398,18 @@ def bill_view(bill_id):
     cursor.execute("SELECT * FROM bills WHERE id=%s", (bill_id,))
     bill = cursor.fetchone()
 
+    # സുരക്ഷാ ചെക്ക്: സ്വന്തം ബില്ലല്ലെങ്കിൽ കാണാൻ അനുവദിക്കില്ല (അഡ്മിൻ/മാനേജർക്ക് കാണാം)
+    if bill and bill['staff_name'] != session.get("username") and not is_manager_or_admin():
+        cursor.close()
+        release_db_connection(conn)
+        return redirect("/dashboard")
+
     cursor.execute("SELECT service_name, bill_amount, service_charge, total_amount, quantity FROM bill_items WHERE bill_id=%s", (bill_id,))
     items = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
     
-    bill_list = [
-        bill['id'],
-        bill['bill_no'],
-        bill['bill_date'],
-        bill['customer_name'],
-        bill['mobile'],
-        bill['staff_name'],
-        bill['total_amount'],
-        bill['bill_time'],
-        bill['payment_method'],
-        bill['notes']
-    ]
-    
+    bill_list = [bill['id'], bill['bill_no'], bill['bill_date'], bill['customer_name'], bill['mobile'], bill['staff_name'], bill['total_amount'], bill['bill_time'], bill['payment_method'], bill['notes']]
     items_list = [[i['service_name'], i['bill_amount'], i['service_charge'], i['total_amount'], i['quantity']] for i in items]
     
     return render_template("bill_view.html", bill=bill_list, items=items_list)
@@ -422,11 +421,19 @@ def balance_sheet():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills")
-    data = cursor.fetchall()
+    username = session.get("username")
 
-    cursor.execute("SELECT SUM(total_amount) FROM bills")
-    total = cursor.fetchone()[0] or 0
+    if is_manager_or_admin():
+        cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills")
+        data = cursor.fetchall()
+        cursor.execute("SELECT SUM(total_amount) FROM bills")
+        total = cursor.fetchone()[0] or 0
+    else:
+        cursor.execute("SELECT id, bill_no, bill_date, customer_name, mobile, staff_name, total_amount FROM bills WHERE staff_name=%s", (username,))
+        data = cursor.fetchall()
+        cursor.execute("SELECT SUM(total_amount) FROM bills WHERE staff_name=%s", (username,))
+        total = cursor.fetchone()[0] or 0
+
     cursor.close()
     release_db_connection(conn)
     return render_template("balance_sheet.html", data=data, total=total)
@@ -436,78 +443,44 @@ def staff_report():
     if not has_permission("perm_staff_rep"):
         return redirect("/dashboard")
 
-    from_date = request.args.get("from_date")
-    to_date = request.args.get("to_date")
-
-    if not from_date:
-        from_date = datetime.now().strftime("%Y-%m-01")
-    if not to_date:
-        to_date = datetime.now().strftime("%Y-%m-%d")
+    from_date = request.args.get("from_date") or datetime.now().strftime("%Y-%m-01")
+    to_date = request.args.get("to_date") or datetime.now().strftime("%Y-%m-%d")
+    username = session.get("username")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT 
-            staff_name, 
-            COUNT(id) as total_bills, 
-            COALESCE(SUM(total_amount), 0) as total_collection
-        FROM bills
-        WHERE bill_date BETWEEN %s AND %s
-        GROUP BY staff_name
-        ORDER BY total_collection DESC
-    """, (from_date, to_date))
+    if is_manager_or_admin():
+        cursor.execute("SELECT staff_name, COUNT(id), COALESCE(SUM(total_amount), 0) FROM bills WHERE bill_date BETWEEN %s AND %s GROUP BY staff_name ORDER BY total_collection DESC", (from_date, to_date))
+    else:
+        cursor.execute("SELECT staff_name, COUNT(id), COALESCE(SUM(total_amount), 0) FROM bills WHERE staff_name=%s AND bill_date BETWEEN %s AND %s GROUP BY staff_name", (username, from_date, to_date))
     
     report_data = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
-
-    return render_template(
-        "staff_report.html",
-        report_data=report_data,
-        from_date=from_date,
-        to_date=to_date
-    )
+    return render_template("staff_report.html", report_data=report_data, from_date=from_date, to_date=to_date)
 
 @app.route("/service_report", methods=["GET"])
 def service_report():
     if not has_permission("perm_service_rep"):
         return redirect("/dashboard")
 
-    from_date = request.args.get("from_date")
-    to_date = request.args.get("to_date")
-
-    if not from_date:
-        from_date = datetime.now().strftime("%Y-%m-01")
-    if not to_date:
-        to_date = datetime.now().strftime("%Y-%m-%d")
+    from_date = request.args.get("from_date") or datetime.now().strftime("%Y-%m-01")
+    to_date = request.args.get("to_date") or datetime.now().strftime("%Y-%m-%d")
+    username = session.get("username")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT
-            service_name,
-            COUNT(*),
-            SUM(total_amount)
-        FROM bill_items
-        WHERE bill_id IN (
-            SELECT id FROM bills WHERE bill_date BETWEEN %s AND %s
-        )
-        GROUP BY service_name
-        ORDER BY SUM(total_amount) DESC
-    """, (from_date, to_date))
+    if is_manager_or_admin():
+        cursor.execute("SELECT service_name, COUNT(*), SUM(total_amount) FROM bill_items WHERE bill_id IN (SELECT id FROM bills WHERE bill_date BETWEEN %s AND %s) GROUP BY service_name ORDER BY SUM(total_amount) DESC", (from_date, to_date))
+    else:
+        cursor.execute("SELECT service_name, COUNT(*), SUM(total_amount) FROM bill_items WHERE bill_id IN (SELECT id FROM bills WHERE staff_name=%s AND bill_date BETWEEN %s AND %s) GROUP BY service_name ORDER BY SUM(total_amount) DESC", (username, from_date, to_date))
 
     data = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
-
-    return render_template(
-        "service_report.html",
-        data=data,
-        from_date=from_date,
-        to_date=to_date
-    )
+    return render_template("service_report.html", data=data, from_date=from_date, to_date=to_date)
 
 @app.route("/date_report", methods=["GET", "POST"])
 def date_report():
@@ -518,12 +491,17 @@ def date_report():
     cursor = conn.cursor()
     data = []
     total = 0
+    username = session.get("username")
 
     if request.method == "POST":
         from_date = request.form.get("from_date")
         to_date = request.form.get("to_date")
 
-        cursor.execute("SELECT bill_no, bill_date, customer_name, total_amount FROM bills WHERE bill_date BETWEEN %s AND %s ORDER BY bill_date", (from_date, to_date))
+        if is_manager_or_admin():
+            cursor.execute("SELECT bill_no, bill_date, customer_name, total_amount FROM bills WHERE bill_date BETWEEN %s AND %s ORDER BY bill_date", (from_date, to_date))
+        else:
+            cursor.execute("SELECT bill_no, bill_date, customer_name, total_amount FROM bills WHERE staff_name=%s AND bill_date BETWEEN %s AND %s ORDER BY bill_date", (username, from_date, to_date))
+        
         data = cursor.fetchall()
         for row in data:
             total += row[3]
@@ -539,19 +517,22 @@ def expense():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    username = session.get("username")
 
     if request.method == "POST":
         expense_name = request.form.get("expense_name")
         amount = float(request.form.get("amount") or 0)
         expense_date = datetime.now().strftime("%Y-%m-%d")
 
-        cursor.execute("""
-        INSERT INTO expenses (expense_date, expense_name, amount) VALUES (%s,%s,%s)
-        """, (expense_date, expense_name, amount))
+        cursor.execute("INSERT INTO expenses (expense_date, expense_name, amount, staff_name) VALUES (%s,%s,%s,%s)", (expense_date, expense_name, amount, username))
         conn.commit()
         return redirect("/expense")
 
-    cursor.execute("SELECT id, expense_date, expense_name, amount FROM expenses ORDER BY id DESC")
+    if is_manager_or_admin():
+        cursor.execute("SELECT id, expense_date, expense_name, amount FROM expenses ORDER BY id DESC")
+    else:
+        cursor.execute("SELECT id, expense_date, expense_name, amount FROM expenses WHERE staff_name=%s ORDER BY id DESC", (username,))
+        
     data = cursor.fetchall()
     cursor.close()
     release_db_connection(conn)
@@ -564,14 +545,20 @@ def edit_expense(id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    username = session.get("username")
+
+    # സെക്യൂരിറ്റി ചെക്ക്
+    cursor.execute("SELECT staff_name FROM expenses WHERE id=%s", (id,))
+    exp_owner = cursor.fetchone()
+    if exp_owner and exp_owner[0] != username and not is_manager_or_admin():
+        cursor.close()
+        release_db_connection(conn)
+        return redirect("/expense")
 
     if request.method == "POST":
         expense_name = request.form.get("expense_name")
         amount = float(request.form.get("amount") or 0)
-
-        cursor.execute("""
-        UPDATE expenses SET expense_name=%s, amount=%s WHERE id=%s
-        """, (expense_name, amount, id))
+        cursor.execute("UPDATE expenses SET expense_name=%s, amount=%s WHERE id=%s", (expense_name, amount, id))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
@@ -590,6 +577,15 @@ def delete_expense(id):
 
     conn = get_db_connection()
     cursor = conn.cursor()
+    username = session.get("username")
+
+    cursor.execute("SELECT staff_name FROM expenses WHERE id=%s", (id,))
+    exp_owner = cursor.fetchone()
+    if exp_owner and exp_owner[0] != username and not is_manager_or_admin():
+        cursor.close()
+        release_db_connection(conn)
+        return redirect("/expense")
+
     cursor.execute("DELETE FROM expenses WHERE id=%s", (id,))
     conn.commit()
     cursor.close()
@@ -601,34 +597,27 @@ def profit_loss():
     if not has_permission("perm_profit_loss"):
         return redirect("/dashboard")
 
-    selected_date = request.args.get("selected_date")
+    selected_date = request.args.get("selected_date") or datetime.now().strftime("%Y-%m-%d")
+    username = session.get("username")
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if not selected_date:
-        cursor.execute("SELECT max(bill_date) FROM bills")
-        selected_date = cursor.fetchone()[0]
-        if not selected_date:
-            selected_date = datetime.now().strftime("%Y-%m-%d")
-
-    cursor.execute("SELECT SUM(total_amount) FROM bills WHERE bill_date = %s", (selected_date,))
-    collection = cursor.fetchone()[0] or 0
-
-    cursor.execute("SELECT SUM(amount) FROM expenses WHERE expense_date = %s", (selected_date,))
-    expenses = cursor.fetchone()[0] or 0
+    if is_manager_or_admin():
+        cursor.execute("SELECT SUM(total_amount) FROM bills WHERE bill_date = %s", (selected_date,))
+        collection = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT SUM(amount) FROM expenses WHERE expense_date = %s", (selected_date,))
+        expenses = cursor.fetchone()[0] or 0
+    else:
+        cursor.execute("SELECT SUM(total_amount) FROM bills WHERE staff_name=%s AND bill_date = %s", (username, selected_date))
+        collection = cursor.fetchone()[0] or 0
+        cursor.execute("SELECT SUM(amount) FROM expenses WHERE staff_name=%s AND expense_date = %s", (username, selected_date))
+        expenses = cursor.fetchone()[0] or 0
 
     profit = collection - expenses
     cursor.close()
     release_db_connection(conn)
-
-    return render_template(
-        "profit_loss.html", 
-        collection=collection, 
-        expenses=expenses, 
-        profit=profit,
-        selected_date=selected_date
-    )
+    return render_template("profit_loss.html", collection=collection, expenses=expenses, profit=profit, selected_date=selected_date)
 
 @app.route("/delete_bill/<int:bill_id>")
 def delete_bill(bill_id):
@@ -695,28 +684,22 @@ def collection_report():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    if role == "STAFF" and not has_permission("perm_collection_rep"):
+    if role == "STAFF" and not is_manager_or_admin():
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
         total_collection = cursor.fetchone()[0]
-
         cursor.execute("SELECT COUNT(*) FROM bills WHERE staff_name=%s AND bill_date=%s", (username, selected_date))
         bill_count = cursor.fetchone()[0]
-
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='Cash' AND bill_date=%s", (username, selected_date))
         cash_total = cursor.fetchone()[0]
-
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE staff_name=%s AND payment_method='UPI' AND bill_date=%s", (username, selected_date))
         upi_total = cursor.fetchone()[0]
     else:
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE bill_date=%s", (selected_date,))
         total_collection = cursor.fetchone()[0]
-
         cursor.execute("SELECT COUNT(*) FROM bills WHERE bill_date=%s", (selected_date,))
         bill_count = cursor.fetchone()[0]
-
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE payment_method='Cash' AND bill_date=%s", (selected_date,))
         cash_total = cursor.fetchone()[0]
-
         cursor.execute("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE payment_method='UPI' AND bill_date=%s", (selected_date,))
         upi_total = cursor.fetchone()[0]
 
@@ -756,7 +739,6 @@ def add_service():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("INSERT INTO services (service_name, charge, service_type) VALUES (%s,%s,%s)", (service_name, charge, service_type))
-        
         cursor.execute("SELECT id FROM services WHERE service_name=%s ORDER BY id DESC LIMIT 1", (service_name,))
         service_id = cursor.fetchone()[0]
 
@@ -764,7 +746,6 @@ def add_service():
             from_amounts = request.form.getlist("from_amount[]")
             to_amounts = request.form.getlist("to_amount[]")
             charges = request.form.getlist("service_charge[]")
-
             for i in range(len(from_amounts)):
                 if from_amounts[i] != "":
                     cursor.execute("INSERT INTO service_slabs (service_id, from_amount, to_amount, service_charge) VALUES (%s,%s,%s,%s)", (service_id, float(from_amounts[i]), float(to_amounts[i]), float(charges[i])))
@@ -788,14 +769,12 @@ def edit_service(id):
         service_name = request.form.get("service_name")
         charge = float(request.form.get("charge") or 0)
         service_type = request.form.get("service_type")
-
         cursor.execute("UPDATE services SET service_name=%s, charge=%s, service_type=%s WHERE id=%s", (service_name, charge, service_type, id))
 
         if service_type == "VARIABLE":
             from_amounts = request.form.getlist("from_amount[]")
             to_amounts = request.form.getlist("to_amount[]")
             charges = request.form.getlist("service_charge[]")
-
             cursor.execute("DELETE FROM service_slabs WHERE service_id=%s", (id,))
             for i in range(len(from_amounts)):
                 if from_amounts[i] != "":
@@ -808,7 +787,6 @@ def edit_service(id):
 
     cursor.execute("SELECT id, service_name, charge, service_type FROM services WHERE id=%s", (id,))
     service = cursor.fetchone()
-
     cursor.execute("SELECT from_amount, to_amount, service_charge FROM service_slabs WHERE service_id=%s", (id,))
     slabs = cursor.fetchall()
     cursor.close()
@@ -827,27 +805,6 @@ def delete_service(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/service_management")
-
-@app.route("/delete_user/<int:id>")
-def delete_user(id):
-    if session.get("role") != "ADMIN":
-        return redirect("/dashboard")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM users WHERE id=%s", (id,))
-    user = cursor.fetchone()
-
-    if user and user[0] == "admin":
-        cursor.close()
-        release_db_connection(conn)
-        return redirect("/users")
-
-    cursor.execute("DELETE FROM users WHERE id=%s", (id,))
-    conn.commit()
-    cursor.close()
-    release_db_connection(conn)
-    return redirect("/users")
 
 if __name__ == "__main__":
     app.run(debug=True)
