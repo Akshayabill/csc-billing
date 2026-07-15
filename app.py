@@ -67,6 +67,11 @@ def init_db():
     )
     """)
 
+    # ആദ്യം പഴയ ടേബിളുകൾ പൂർണ്ണമായി ഡിലീറ്റ് ചെയ്യുന്നു (Drop)
+    cursor.execute("DROP TABLE IF EXISTS expenses CASCADE;")
+    cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
+
+    # അതിനുശേഷം പുതിയ കോളങ്ങളോടെ ടേബിളുകൾ ഫ്രഷ് ആയി ക്രിയേറ്റ് ചെയ്യുന്നു (Create)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS expenses (
         id SERIAL PRIMARY KEY,
@@ -76,9 +81,6 @@ def init_db():
         staff_name TEXT DEFAULT 'admin'
     )
     """)
-
-    cursor.execute("DROP TABLE IF EXISTS expenses CASCADE;")
-    cursor.execute("DROP TABLE IF EXISTS users CASCADE;")
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
@@ -109,7 +111,6 @@ def init_db():
     conn.commit()
     cursor.close()
     release_db_connection(conn)
-
 init_db()
 
 def has_permission(permission_name):
