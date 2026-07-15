@@ -318,7 +318,7 @@ def new_bill():
         conn.commit()
         cursor.close()
         release_db_connection(conn)
-        return redirect("/reports")
+        return redirect(f"/bill/{bill_id}")
 
     cursor.execute("SELECT service_name, service_type, charge FROM services ORDER BY service_name")
     services = cursor.fetchall()
