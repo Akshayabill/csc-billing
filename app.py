@@ -8,7 +8,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = "csc_secret"
 
-DATABASE_URL = "postgresql://postgres:CSCbilling2026@db.srtqnjzrgmrqvorhshaq.supabase.co:5432/postgres"
+DATABASE_URL = "postgresql://postgres.srtqnjzrgmrqvorhshaq:Kondazhy106@aws-1-ap-south-1.pooler.supabase.com:6543/postgres"
 db_pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
 
 def get_db_connection():
