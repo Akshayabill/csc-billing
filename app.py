@@ -9,7 +9,7 @@ app = Flask(__name__)
 app.secret_key = "csc_secret"
 
 DATABASE_URL = "postgresql://postgres:Kondazhy106@db.srtqnjzrgmqrvorhshaq.supabase.co:5432/postgres"
-db_pool = SimpleConnectionPool(1, 10, DATABASE_URL)
+db_pool = SimpleConnectionPool(1, 10, dsn=DATABASE_URL)
 
 def get_db_connection():
     return db_pool.getconn()
