@@ -4,6 +4,7 @@ from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import DictCursor
 from flask import Flask, render_template, request, redirect, session, abort
 from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 app.secret_key = "csc_secret"
@@ -189,7 +190,7 @@ def add_user():
         
         p_new_bill = "NEW_BILL" in selected_features or is_full
         p_all_bills = "ALL_BILLS" in selected_features or is_full
-        p_coll_rep = "COLLECTION_REP" in selected_features or is_full
+        p_coll = "COLLECTION_REP" in selected_features or is_full
         p_date_rep = "DATE_REP" in selected_features or is_full
         p_staff_rep = "STAFF_REP" in selected_features or is_full
         p_serv_rep = "SERVICE_REP" in selected_features or is_full
@@ -202,7 +203,7 @@ def add_user():
         cursor.execute("""
             INSERT INTO users (username, password, role, perm_new_bill, perm_all_bills, perm_collection_rep, perm_date_rep, perm_staff_rep, perm_service_rep, perm_expense, perm_profit_loss, perm_services_mgmt, is_full_access) 
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """, (username, password, role, p_new_bill, p_all_bills, p_coll_rep, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full))
+        """, (username, password, role, p_new_bill, p_all_bills, p_coll, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
@@ -228,7 +229,7 @@ def edit_user(id):
         
         p_new_bill = "NEW_BILL" in selected_features or is_full
         p_all_bills = "ALL_BILLS" in selected_features or is_full
-        p_coll_rep = "COLLECTION_REP" in selected_features or is_full
+        p_coll = "COLLECTION_REP" in selected_features or is_full
         p_date_rep = "DATE_REP" in selected_features or is_full
         p_staff_rep = "STAFF_REP" in selected_features or is_full
         p_serv_rep = "SERVICE_REP" in selected_features or is_full
@@ -239,7 +240,7 @@ def edit_user(id):
         cursor.execute("""
             UPDATE users SET username=%s, password=%s, role=%s, perm_new_bill=%s, perm_all_bills=%s, perm_collection_rep=%s, perm_date_rep=%s, perm_staff_rep=%s, perm_service_rep=%s, perm_expense=%s, perm_profit_loss=%s, perm_services_mgmt=%s, is_full_access=%s 
             WHERE id=%s
-        """, (username, password, role, p_new_bill, p_all_bills, p_coll_rep, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full, id))
+        """, (username, password, role, p_new_bill, p_all_bills, p_coll, p_date_rep, p_staff_rep, p_serv_rep, p_expense, p_prof_loss, p_serv_mgmt, is_full, id))
         conn.commit()
         cursor.close()
         release_db_connection(conn)
@@ -309,8 +310,12 @@ def new_bill():
         cursor.execute("SELECT COUNT(*) FROM bills")
         bill_count = cursor.fetchone()[0] + 1
         bill_no = f"BILL{bill_count:04d}"
-        bill_date = datetime.now().strftime("%Y-%m-%d")
-        bill_time = datetime.now().strftime("%H:%M:%S")
+        
+        # ഇന്ത്യൻ സമയം കൃത്യമായി റെക്കോർഡ് ചെയ്യുന്നു
+        IST = pytz.timezone('Asia/Kolkata')
+        current_time = datetime.now(IST)
+        bill_date = current_time.strftime("%Y-%m-%d")
+        bill_time = current_time.strftime("%H:%M:%S")
 
         cursor.execute("""
             INSERT INTO bills (bill_no, bill_date, bill_time, customer_name, mobile, staff_name, payment_method, total_amount, notes)
@@ -438,8 +443,9 @@ def staff_report():
     if not has_permission("perm_staff_rep"):
         return redirect("/dashboard")
 
-    from_date = request.args.get("from_date") or datetime.now().strftime("%Y-%m-01")
-    to_date = request.args.get("to_date") or datetime.now().strftime("%Y-%m-%d")
+    IST = pytz.timezone('Asia/Kolkata')
+    from_date = request.args.get("from_date") or datetime.now(IST).strftime("%Y-%m-01")
+    to_date = request.args.get("to_date") or datetime.now(IST).strftime("%Y-%m-%d")
     username = session.get("username")
 
     conn = get_db_connection()
@@ -477,8 +483,9 @@ def service_report():
     if not has_permission("perm_service_rep"):
         return redirect("/dashboard")
 
-    from_date = request.args.get("from_date") or datetime.now().strftime("%Y-%m-01")
-    to_date = request.args.get("to_date") or datetime.now().strftime("%Y-%m-%d")
+    IST = pytz.timezone('Asia/Kolkata')
+    from_date = request.args.get("from_date") or datetime.now(IST).strftime("%Y-%m-01")
+    to_date = request.args.get("to_date") or datetime.now(IST).strftime("%Y-%m-%d")
     username = session.get("username")
 
     conn = get_db_connection()
@@ -534,7 +541,9 @@ def expense():
     if request.method == "POST":
         expense_name = request.form.get("expense_name")
         amount = float(request.form.get("amount") or 0)
-        expense_date = datetime.now().strftime("%Y-%m-%d")
+        
+        IST = pytz.timezone('Asia/Kolkata')
+        expense_date = datetime.now(IST).strftime("%Y-%m-%d")
 
         cursor.execute("INSERT INTO expenses (expense_date, expense_name, amount, staff_name) VALUES (%s,%s,%s,%s)", (expense_date, expense_name, amount, username))
         conn.commit()
@@ -608,7 +617,8 @@ def profit_loss():
     if not has_permission("perm_profit_loss"):
         return redirect("/dashboard")
 
-    selected_date = request.args.get("selected_date") or datetime.now().strftime("%Y-%m-%d")
+    IST = pytz.timezone('Asia/Kolkata')
+    selected_date = request.args.get("selected_date") or datetime.now(IST).strftime("%Y-%m-%d")
     username = session.get("username")
 
     conn = get_db_connection()
@@ -663,7 +673,7 @@ def dashboard():
         
     c_new_bill = has_permission("perm_new_bill")
     c_all_bills = has_permission("perm_all_bills")
-    c_coll_rep = has_permission("perm_collection_rep")
+    c_coll = has_permission("perm_collection_rep")
     c_date_rep = has_permission("perm_date_rep")
     c_staff_rep = has_permission("perm_staff_rep")
     c_serv_rep = has_permission("perm_service_rep")
@@ -675,7 +685,7 @@ def dashboard():
                            role=session.get("role"), 
                            can_new_bill=c_new_bill,
                            can_all_bills=c_all_bills,
-                           can_collection_rep=c_coll_rep,
+                           can_collection_rep=c_coll,
                            can_date_rep=c_date_rep,
                            can_staff_rep=c_staff_rep,
                            can_service_rep=c_serv_rep,
@@ -690,7 +700,9 @@ def collection_report():
 
     role = session.get("role")
     username = session.get("username")
-    selected_date = request.args.get("date") or datetime.now().strftime("%Y-%m-%d")
+    
+    IST = pytz.timezone('Asia/Kolkata')
+    selected_date = request.args.get("date") or datetime.now(IST).strftime("%Y-%m-%d")
 
     conn = get_db_connection()
     cursor = conn.cursor()
