@@ -390,19 +390,22 @@ def reports():
 
 @app.route("/bill/<int:bill_id>")
 def bill_view(bill_id):
-    if "username" not in session:
-        return redirect("/")
-
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     
     cursor.execute("SELECT * FROM bills WHERE id=%s", (bill_id,))
     bill = cursor.fetchone()
 
-    if bill and bill['staff_name'] != session.get("username") and not is_manager_or_admin():
+    if "username" in session and bill:
+        if bill['staff_name'] != session.get("username") and not is_manager_or_admin():
+            cursor.close()
+            release_db_connection(conn)
+            return redirect("/dashboard")
+
+    if not bill:
         cursor.close()
         release_db_connection(conn)
-        return redirect("/dashboard")
+        return "Bill Not Found", 404
 
     cursor.execute("SELECT service_name, bill_amount, service_charge, total_amount, quantity FROM bill_items WHERE bill_id=%s", (bill_id,))
     items = cursor.fetchall()
