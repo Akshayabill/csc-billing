@@ -68,7 +68,6 @@ def init_db():
     )
     """)
 
-    
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -311,7 +310,7 @@ def new_bill():
         bill_count = cursor.fetchone()[0] + 1
         bill_no = f"BILL{bill_count:04d}"
         
-        # ഇന്ത്യൻ സമയം കൃത്യമായി റെക്കോർഡ് ചെയ്യുന്നു
+        # Record time accurately using Indian Standard Time (IST)
         IST = pytz.timezone('Asia/Kolkata')
         current_time = datetime.now(IST)
         bill_date = current_time.strftime("%Y-%m-%d")
@@ -396,6 +395,8 @@ def bill_view(bill_id):
     cursor.execute("SELECT * FROM bills WHERE id=%s", (bill_id,))
     bill = cursor.fetchone()
 
+    # If logged in as staff, restrict viewing bills created by other staff.
+    # However, allow unauthenticated access for customers accessing via shared links.
     if "username" in session and bill:
         if bill['staff_name'] != session.get("username") and not is_manager_or_admin():
             cursor.close()
@@ -656,6 +657,39 @@ def delete_bill(bill_id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/reports")
+
+@app.route("/delete_user/<int:user_id>")
+def delete_user(user_id):
+    if session.get("role") != "ADMIN":
+        return redirect("/dashboard")
+        
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Get username to safely unlinked or update references
+    cursor.execute("SELECT username FROM users WHERE id=%s", (user_id,))
+    user = cursor.fetchone()
+    
+    if user:
+        username = user[0]
+        
+        # Prevent deleting the main admin account
+        if username == 'admin':
+            cursor.close()
+            release_db_connection(conn)
+            return "Cannot delete main ADMIN account", 400
+            
+        # Safely update references to 'Deleted Staff' to prevent foreign key errors
+        cursor.execute("UPDATE bills SET staff_name='Deleted Staff' WHERE staff_name=%s", (username,))
+        cursor.execute("UPDATE expenses SET staff_name='Deleted Staff' WHERE staff_name=%s", (username,))
+        
+        # Delete user entry safely
+        cursor.execute("DELETE FROM users WHERE id=%s", (user_id,))
+        conn.commit()
+        
+    cursor.close()
+    release_db_connection(conn)
+    return redirect("/users")
 
 @app.route("/check")
 def check():
