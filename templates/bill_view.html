@@ -51,7 +51,6 @@
             line-height: 1.2;
         }
 
-        /* Darker Colors for Clear Printing */
         .brand-details .tsr-code {
             font-size: 15px;
             font-weight: bold;
@@ -128,13 +127,6 @@
             font-family: Arial;
         }
 
-        /* WhatsApp Button Style */
-        .btn-whatsapp {
-            background:#25D366;
-            color: white;
-            font-weight: bold;
-        }
-
         .total-box{
             width:250px;
             margin-top:20px;
@@ -158,16 +150,13 @@
             text-align: left;
         }
 
-        /* ===================================================
-           STANDARD FULL A4 PORTRAIT PRINT CONTROLS
-           =================================================== */
         @media print {
             @page {
                 size: A4 portrait;
                 margin: 15mm 15mm 15mm 15mm;
             }
 
-            .btn, .btn-whatsapp, .header {
+            .btn, .header {
                 display: none !important;
             }
             
@@ -339,15 +328,59 @@
         Print Receipt
     </button>
 
-    <a href="https://wa.me/91{{ bill[4] }}?text=Hello%20{{ bill[3] }},%20your%20bill%20no%20{{ bill[1] }}%20for%20Amount%20%E2%82%B9{{ bill[6] }}%20is%20successfully%20generated%20at%20E-SEVANA%20KENDRAM.%20View%20your%20full%20receipt%20here:%20{{ request.url }}" target="_blank" class="btn btn-whatsapp">
-        Send via WhatsApp
-    </a>
+    <!-- സുരക്ഷിതമായ പുതിയ ഷെയർ ബട്ടൺ -->
+    <button onclick="sharePDFViaWhatsApp('{{ bill[0] }}', '{{ bill[1] }}')" class="btn" style="background-color: #28a745; color: white; font-weight: bold;">
+        Share
+    </button>
 
     <button onclick="history.back()" class="btn">
         Back
     </button>
 
 </div>
+
+<script>
+function sharePDFViaWhatsApp(billId, billNo) {
+    const pdfUrl = `/bill/${billId}/pdf`;
+    
+    const activeBtn = event.target;
+    const originalBtnText = activeBtn.innerText;
+    activeBtn.innerText = "Preparing PDF...";
+    activeBtn.disabled = true;
+
+    fetch(pdfUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("PDF fetch failed");
+            return response.blob();
+        })
+        .then(blob => {
+            const file = new File([blob], `Bill_${billNo}.pdf`, { type: "application/pdf" });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: `Bill ${billNo}`,
+                    text: `CSC E-SEVANA KENDRAM - Bill No: ${billNo}`
+                })
+                .then(() => console.log('Shared successfully'))
+                .catch((error) => console.error('Sharing error:', error))
+                .finally(() => {
+                    activeBtn.innerText = originalBtnText;
+                    activeBtn.disabled = false;
+                });
+            } else {
+                activeBtn.innerText = originalBtnText;
+                activeBtn.disabled = false;
+                window.open(pdfUrl, '_blank');
+            }
+        })
+        .catch(error => {
+            alert('PDF ഉണ്ടാക്കുന്നതിൽ ഒരു തടസ്സം നേരിട്ടു: ' + error);
+            activeBtn.innerText = originalBtnText;
+            activeBtn.disabled = false;
+        });
+}
+</script>
 
 </body>
 </html>
