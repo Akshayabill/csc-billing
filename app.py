@@ -2,9 +2,11 @@ import os
 import psycopg2
 from psycopg2.pool import SimpleConnectionPool
 from psycopg2.extras import DictCursor
-from flask import Flask, render_template, request, redirect, session, abort
+from flask import Flask, render_template, request, redirect, session, abort, make_response
 from datetime import datetime
 import pytz
+from xhtml2pdf import pisa
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = "csc_secret"
@@ -886,6 +888,50 @@ def delete_service(id):
     cursor.close()
     release_db_connection(conn)
     return redirect("/service_management")
+
+def fetch_resources(uri, rel):
+    import os
+    from flask import current_app
+    if uri.startswith('/static/'):
+        path = os.path.join(current_app.root_path, uri.lstrip('/'))
+        return path
+    return uri
+
+@app.route("/bill/<int:bill_id>/pdf")
+def bill_pdf(bill_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
+    
+    cursor.execute("SELECT * FROM bills WHERE id=%s", (bill_id,))
+    bill = cursor.fetchone()
+
+    if not bill:
+        cursor.close()
+        release_db_connection(conn)
+        return "Bill Not Found", 404
+
+    cursor.execute("SELECT service_name, bill_amount, service_charge, total_amount, quantity FROM bill_items WHERE bill_id=%s", (bill_id,))
+    items = cursor.fetchall()
+    cursor.close()
+    release_db_connection(conn)
+    
+    bill_list = [bill['id'], bill['bill_no'], bill['bill_date'], bill['customer_name'], bill['mobile'], bill['staff_name'], bill['total_amount'], bill['bill_time'], bill['payment_method'], bill['notes']]
+    items_list = [[i['service_name'], i['bill_amount'], i['service_charge'], i['total_amount'], i['quantity']] for i in items]
+    
+    html = render_template("bill_pdf_template.html", bill=bill_list, items=items_list)
+    
+    pdf_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(BytesIO(html.encode("UTF-8")), dest=pdf_buffer, link_callback=fetch_resources)
+    
+    if pisa_status.err:
+        return "PDF ജനറേറ്റ് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു", 500
+        
+    pdf_buffer.seek(0)
+    response = make_response(pdf_buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename=Bill_{bill["bill_no"]}.pdf'
+    
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True)
