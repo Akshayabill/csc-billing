@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bill PDF</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 10mm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #333;
+            font-size: 12px;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        
+        .brand-title {
+            font-size: 22px;
+            color: #0066cc;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .sub-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #000;
+        }
+        
+        .info-table {
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 25px;
+        }
+        .info-table td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .items-table th {
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .items-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .total-box {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f2f8ff;
+            border: 2px solid #0066cc;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0066cc;
+            width: 200px;
+            float: right;
+            text-align: center;
+        }
+        
+        .notes-box {
+            margin-top: 30px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="text-center">
+        <!-- CSC ലോഗോയ്ക്കുള്ള ടാഗ് -->
+        <img src="/static/logo.png" width="100" height="auto" style="display: block; margin: 0 auto 10px auto;">
+        
+        <div class="brand-title">E-SEVANA KENDRAM</div>
+        <div class="sub-title">CSC ID : 374016860011</div>
+        <div>Paramelpadi, Kondazhy - 679106</div>
+        <div><b>Phone:</b> 8301057498 | <b>Email:</b> csckondazhy@gmail.com</div>
+        <hr style="border: 1px solid #ddd; margin-top: 15px;">
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td style="width: 50%;">
+                <b>Customer :</b> {{ bill[3] }}<br>
+                <b>Mobile :</b> {{ bill[4] }}<br>
+                <b>Staff :</b> {{ bill[5] }}<br>
+                <b>Payment :</b> {{ bill[8] }}
+            </td>
+            <td style="width: 50%; text-align: right;">
+                <b>Bill No :</b> {{ bill[1] }}<br>
+                <b>Date :</b> {{ bill[2] }}<br>
+                <b>Time :</b> {{ bill[7] }}
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="text-align: left;">Service</th>
+                <th style="width: 15%; text-align: center;">Qty</th>
+                <th style="width: 25%; text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item[0] }}</td>
+                <td style="text-align: center;">{{ item[4] }}</td>
+                <td style="text-align: right;">Rs. {{ item[3] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total-box">
+        Total : Rs. {{ bill[6] }}
+    </div>
+    
+    <div style="clear: both;"></div>
+
+    {% if bill[9] %}
+    <div class="notes-box">
+        <div style="font-weight: bold; margin-bottom: 5px; color: #555;">Application Notes / Reference Details:</div>
+        <div>{{ bill[9] }}</div>
+    </div>
+    {% endif %}
+
+    <br><br>
+    <hr style="border: 0.5px dashed #ccc;">
+    <div class="text-center">
+        <h3>Thank You, Visit Again</h3>
+    </div>
+
+</body>
+</html>
